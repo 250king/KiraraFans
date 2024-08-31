@@ -21,13 +21,13 @@ import androidx.compose.material3.*
 import androidx.compose.runtime.Composable
 import androidx.compose.ui.Modifier
 import com.king250.kirafan.model.InfoItem
-import com.king250.kirafan.ui.theme.KiraraToolsTheme
+import com.king250.kirafan.ui.theme.KiraraFansTheme
 
 class InfoActivity : ComponentActivity() {
     override fun onCreate(savedInstanceState: Bundle?) {
         super.onCreate(savedInstanceState)
         setContent {
-            KiraraToolsTheme {
+            KiraraFansTheme {
                 // A surface container using the 'background' color from the theme
                 Surface(modifier = Modifier.fillMaxSize(), color = MaterialTheme.colorScheme.background) {
                     Main(this)

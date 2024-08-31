@@ -38,7 +38,7 @@ private val LightColorScheme = lightColorScheme(
 
 @Suppress("FunctionName")
 @Composable
-fun KiraraToolsTheme(
+fun KiraraFansTheme(
     darkTheme: Boolean = isSystemInDarkTheme(),
     // Dynamic color is available on Android 12+
     dynamicColor: Boolean = true,

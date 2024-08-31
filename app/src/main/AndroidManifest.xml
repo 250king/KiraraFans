@@ -1,22 +1,13 @@
 <?xml version="1.0" encoding="utf-8"?>
 <manifest xmlns:android="http://schemas.android.com/apk/res/android"
           xmlns:tools="http://schemas.android.com/tools">
-
     <uses-permission android:name="android.permission.INTERNET"/>
     <uses-permission android:name="android.permission.REQUEST_DELETE_PACKAGES"/>
-    <uses-permission android:name="android.permission.READ_EXTERNAL_STORAGE"/>
-    <uses-permission android:name="android.permission.WRITE_EXTERNAL_STORAGE"/>
-    <uses-permission
-            android:name="android.permission.MANAGE_EXTERNAL_STORAGE"
-            tools:ignore="ScopedStorage"/>
-
+    <uses-permission android:name="android.permission.REQUEST_INSTALL_PACKAGES"/>
     <queries>
         <package android:name="com.aniplex.kirarafantasia"/>
-        <package android:name="moe.shizuku.privileged.api"/>
-        <package android:name="com.topjohnwu.magisk"/>
-        <package android:name="io.github.huskydg.magisk"/>
+        <package android:name="com.vmos.pro"/>
     </queries>
-
     <application
             android:allowBackup="true"
             android:dataExtractionRules="@xml/data_extraction_rules"
@@ -28,25 +19,12 @@
             android:supportsRtl="true"
             android:theme="@style/Theme.KiraraTools"
             tools:targetApi="31">
-        <activity
-                android:name=".activity.ConfigActivity"
-                android:exported="false"/>
-
         <meta-data
                 android:name="com.gd1000m.cloud.fc.endpoint"
                 android:value="https://kirara.fc.gcloudapi.com/"/>
         <meta-data
                 android:name="com.gd1000m.author"
                 android:value="250king"/>
-
-        <provider
-                android:name="rikka.shizuku.ShizukuProvider"
-                android:authorities="${applicationId}.shizuku"
-                android:enabled="true"
-                android:exported="true"
-                android:multiprocess="false"
-                android:permission="android.permission.INTERACT_ACROSS_USERS_FULL"/>
-
         <activity
                 android:name=".activity.InfoActivity"
                 android:exported="false"
@@ -60,12 +38,15 @@
                 android:exported="false"
                 android:theme="@style/Theme.KiraraTools"/>
         <activity
-                android:name=".MainActivity"
+            android:name=".activity.LoginActivity"
+            android:exported="false"
+            android:theme="@style/Theme.KiraraTools"/>
+        <activity
+                android:name=".activity.MainActivity"
                 android:exported="true"
                 android:theme="@style/Theme.KiraraTools">
             <intent-filter>
                 <action android:name="android.intent.action.MAIN"/>
-
                 <category android:name="android.intent.category.LAUNCHER"/>
             </intent-filter>
         </activity>

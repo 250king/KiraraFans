@@ -34,13 +34,13 @@ import com.king250.kirafan.BuildConfig
 import com.king250.kirafan.R
 import com.king250.kirafan.model.AboutItem
 import com.king250.kirafan.model.DeveloperItem
-import com.king250.kirafan.ui.theme.KiraraToolsTheme
+import com.king250.kirafan.ui.theme.KiraraFansTheme
 
 class AboutActivity : ComponentActivity() {
     override fun onCreate(savedInstanceState: Bundle?) {
         super.onCreate(savedInstanceState)
         setContent {
-            KiraraToolsTheme {
+            KiraraFansTheme {
                 Surface(modifier = Modifier.fillMaxSize(), color = MaterialTheme.colorScheme.background) {
                     Main(this)
                 }
@@ -125,7 +125,7 @@ fun Main(activity: AboutActivity) {
                         contentDescription = null
                     )
                 }
-                Box(Modifier.height(16.dp))
+                Spacer(Modifier.height(16.dp))
                 Text(activity.getString(R.string.app_name), style = MaterialTheme.typography.titleLarge)
                 Text("v${BuildConfig.VERSION_NAME}", style = MaterialTheme.typography.bodyMedium)
             }
