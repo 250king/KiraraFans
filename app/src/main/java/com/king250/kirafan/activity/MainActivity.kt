@@ -17,6 +17,7 @@ import androidx.compose.foundation.rememberScrollState
 import androidx.compose.foundation.verticalScroll
 import androidx.compose.material.icons.Icons
 import androidx.compose.material.icons.filled.Info
+import androidx.compose.material.icons.filled.Menu
 import androidx.compose.material.icons.filled.Person
 import androidx.compose.material.icons.filled.PlayArrow
 import androidx.compose.material3.AlertDialog
@@ -70,6 +71,12 @@ fun Main(activity: MainActivity) {
     val lifecycleOwner = LocalLifecycleOwner.current
     val lifecycleState by lifecycleOwner.lifecycle.currentStateFlow.collectAsState()
     val scrollState = rememberScrollState()
+    val app = if (Build.VERSION.SDK_INT >= Build.VERSION_CODES.UPSIDE_DOWN_CAKE) {
+        "com.vmos.pro"
+    }
+    else {
+        "com.aniplex.kirarafantasia"
+    }
 
     LaunchedEffect(lifecycleState) {
         when (lifecycleState) {
@@ -79,8 +86,13 @@ fun Main(activity: MainActivity) {
             Lifecycle.State.STARTED -> {}
             Lifecycle.State.RESUMED -> {
                 try {
-                    val info = activity.packageManager.getPackageInfo("com.aniplex.kirarafantasia", 0)
-                    version = info.versionName
+                    val info = activity.packageManager.getPackageInfo(app, 0)
+                    version = if (Build.VERSION.SDK_INT >= Build.VERSION_CODES.UPSIDE_DOWN_CAKE) {
+                        "VMOS ${info.versionName}"
+                    }
+                    else {
+                        info.versionName
+                    }
                 }
                 catch (_: Exception) {
                     version = ""
@@ -98,8 +110,7 @@ fun Main(activity: MainActivity) {
             )
         }
     ) { innerPadding ->
-        Column(
-            Modifier.padding(innerPadding).verticalScroll(scrollState)) {
+        Column(Modifier.padding(innerPadding).verticalScroll(scrollState)) {
             CardButton(
                 icon = {
                     Icon(
@@ -120,7 +131,7 @@ fun Main(activity: MainActivity) {
                 icon = {
                     Icon(
                         modifier = Modifier.size(24.dp),
-                        imageVector = Icons.Filled.Person,
+                        imageVector = Icons.Default.Person,
                         contentDescription = null
                     )
                 }, onClick = {
@@ -129,13 +140,13 @@ fun Main(activity: MainActivity) {
                 }
             ) {
                 Text(profile.name.ifEmpty {"未登录"}, style = MaterialTheme.typography.titleMedium)
-                Text("点按${if (profile.name.isEmpty()) { "进行登录" } else { "查看详情" }}", style = MaterialTheme.typography.bodyMedium)
+                Text("点按${if (profile.name.isEmpty()) { "进行登录" } else { "查看账户详情" }}", style = MaterialTheme.typography.bodyMedium)
             }
             CardButton(
                 icon = {
                     Icon(
                         modifier = Modifier.size(24.dp),
-                        painter = painterResource(R.drawable.stadia_controller_24px),
+                        imageVector = Icons.Default.Menu,
                         contentDescription = null
                     )
                 },
@@ -158,19 +169,26 @@ fun Main(activity: MainActivity) {
                 }
             ) {
                 Text(version.ifEmpty { "应用未安装" }, style = MaterialTheme.typography.titleMedium)
-                Text("点按可${if(version.isEmpty()) {"安装"} else {"卸载"}}游戏本体", style = MaterialTheme.typography.bodyMedium)
+                Text("点按可${if(version.isEmpty()) {"安装"} else {"卸载"}}相关应用", style = MaterialTheme.typography.bodyMedium)
             }
             CardButton(
                 icon = {
                     Icon(
                         modifier = Modifier.size(24.dp),
-                        imageVector = Icons.Filled.PlayArrow,
+                        imageVector = Icons.Default.PlayArrow,
                         contentDescription = null
                     )
                 },
                 onClick = {
                     try {
-                        activity.packageManager.getPackageInfo("com.aniplex.kirarafantasia", 0)
+                        activity.packageManager.getPackageInfo(app, 0)
+                        if (profile.name.isEmpty()) {
+                            Toast.makeText(activity, "要登录先才能用哟~", Toast.LENGTH_SHORT).show()
+                        }
+                        else {
+                            val intent = activity.packageManager.getLaunchIntentForPackage(app)
+                            activity.startActivity(intent)
+                        }
                     }
                     catch (_: Exception) {
                         Toast.makeText(activity, "要先安装应用先哟~", Toast.LENGTH_SHORT).show()
@@ -183,7 +201,7 @@ fun Main(activity: MainActivity) {
                 icon = {
                     Icon(
                         modifier = Modifier.size(24.dp),
-                        imageVector = Icons.Filled.Info,
+                        imageVector = Icons.Default.Info,
                         contentDescription = null
                     )
                 },
