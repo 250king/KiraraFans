@@ -1,5 +1,9 @@
 package com.king250.kirafan.model
 
-class Env {
-    val QLOGIN_API = ""
+object Env {
+    @JvmStatic
+    val QLOGIN_HOST = "https://qlogin-server-pmtqqyihcm.cn-shenzhen.fcapp.run"
+
+    @JvmStatic
+    val SERVER_HOST = "https://vpc.sparklefantasia.com/"
 }

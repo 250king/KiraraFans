@@ -30,14 +30,11 @@ import androidx.compose.material3.Text
 import androidx.compose.material3.TextButton
 import androidx.compose.material3.TopAppBar
 import androidx.compose.runtime.Composable
-import androidx.compose.runtime.LaunchedEffect
-import androidx.compose.runtime.collectAsState
 import androidx.compose.runtime.getValue
 import androidx.compose.runtime.mutableStateOf
 import androidx.compose.runtime.remember
 import androidx.compose.runtime.setValue
 import androidx.compose.ui.Modifier
-import androidx.compose.ui.platform.LocalLifecycleOwner
 import androidx.compose.ui.res.painterResource
 import androidx.compose.ui.unit.dp
 import androidx.compose.ui.unit.sp
@@ -46,6 +43,7 @@ import com.king250.kirafan.R
 import com.king250.kirafan.model.UserItem
 import com.king250.kirafan.ui.component.CardButton
 import com.king250.kirafan.ui.theme.KiraraFansTheme
+import com.king250.kirafan.util.ComposableLifecycle
 
 class MainActivity : ComponentActivity() {
     override fun onCreate(savedInstanceState: Bundle?) {
@@ -68,23 +66,17 @@ fun Main(activity: MainActivity) {
     val profile by remember { mutableStateOf(UserItem()) }
     var version by remember { mutableStateOf("") }
     var unsupportedDialog by remember { mutableStateOf(false) }
-    val lifecycleOwner = LocalLifecycleOwner.current
-    val lifecycleState by lifecycleOwner.lifecycle.currentStateFlow.collectAsState()
     val scrollState = rememberScrollState()
+
     val app = if (Build.VERSION.SDK_INT >= Build.VERSION_CODES.UPSIDE_DOWN_CAKE) {
         "com.vmos.pro"
     }
     else {
         "com.aniplex.kirarafantasia"
     }
-
-    LaunchedEffect(lifecycleState) {
-        when (lifecycleState) {
-            Lifecycle.State.DESTROYED -> {}
-            Lifecycle.State.INITIALIZED -> {}
-            Lifecycle.State.CREATED -> {}
-            Lifecycle.State.STARTED -> {}
-            Lifecycle.State.RESUMED -> {
+    ComposableLifecycle { _, event ->
+        when (event) {
+            Lifecycle.Event.ON_RESUME -> {
                 try {
                     val info = activity.packageManager.getPackageInfo(app, 0)
                     version = if (Build.VERSION.SDK_INT >= Build.VERSION_CODES.UPSIDE_DOWN_CAKE) {
@@ -98,6 +90,7 @@ fun Main(activity: MainActivity) {
                     version = ""
                 }
             }
+            else -> {}
         }
     }
 
@@ -165,6 +158,11 @@ fun Main(activity: MainActivity) {
                                 intent.launchUrl(activity, uri)
                             }
                         }
+                    }
+                    else {
+                        val intent = Intent(Intent.ACTION_DELETE)
+                        intent.data = Uri.parse("package:$app")
+                        activity.startActivity(intent)
                     }
                 }
             ) {
