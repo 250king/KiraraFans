@@ -1,4 +1,4 @@
-package com.king250.kirafan.activity
+package com.king250.kirafan.ui.activity
 
 import android.annotation.SuppressLint
 import android.content.ClipData
@@ -20,7 +20,7 @@ import androidx.compose.material.icons.automirrored.filled.ArrowBack
 import androidx.compose.material3.*
 import androidx.compose.runtime.Composable
 import androidx.compose.ui.Modifier
-import com.king250.kirafan.model.InfoItem
+import com.king250.kirafan.model.data.InfoItem
 import com.king250.kirafan.ui.theme.KiraraFansTheme
 
 class InfoActivity : ComponentActivity() {

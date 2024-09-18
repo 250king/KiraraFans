@@ -13,6 +13,6 @@ dependencyResolutionManagement {
     }
 }
 
-rootProject.name = "KiraraTools"
+rootProject.name = "KiraraFan"
 include(":app")
  

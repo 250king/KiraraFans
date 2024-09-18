@@ -1,4 +1,4 @@
-package com.king250.kirafan.activity
+package com.king250.kirafan.ui.activity
 
 import android.annotation.SuppressLint
 import android.content.Intent
@@ -32,8 +32,8 @@ import androidx.core.content.res.ResourcesCompat
 import coil.compose.AsyncImage
 import com.king250.kirafan.BuildConfig
 import com.king250.kirafan.R
-import com.king250.kirafan.model.AboutItem
-import com.king250.kirafan.model.DeveloperItem
+import com.king250.kirafan.model.data.AboutItem
+import com.king250.kirafan.model.data.DeveloperItem
 import com.king250.kirafan.ui.theme.KiraraFansTheme
 
 class AboutActivity : ComponentActivity() {
@@ -56,12 +56,6 @@ class AboutActivity : ComponentActivity() {
 fun Main(activity: AboutActivity) {
     val scrollState = rememberScrollState()
     val items = listOf(
-        AboutItem("检查更新") {
-
-        },
-        AboutItem("给个好评") {
-
-        },
         AboutItem("一起来玩") {
             val intent = CustomTabsIntent.Builder().build()
             val uri = Uri.parse("https://discord.gg/YmbbxDsbNB")

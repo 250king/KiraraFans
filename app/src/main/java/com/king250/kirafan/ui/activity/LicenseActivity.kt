@@ -1,4 +1,4 @@
-package com.king250.kirafan.activity
+package com.king250.kirafan.ui.activity
 
 import android.annotation.SuppressLint
 import android.os.Bundle
