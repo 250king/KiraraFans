@@ -7,13 +7,16 @@ import android.content.Context
 import android.content.Intent
 import android.content.IntentFilter
 import android.os.Build
+import android.widget.Toast
 import androidx.lifecycle.AndroidViewModel
 import com.alibaba.fastjson2.JSON
 import com.king250.kirafan.Env
 import com.king250.kirafan.model.data.UserItem
 import com.king250.kirafan.util.Utils
+import kotlinx.coroutines.Dispatchers
 import kotlinx.coroutines.flow.MutableStateFlow
 import kotlinx.coroutines.flow.StateFlow
+import kotlinx.coroutines.withContext
 import okhttp3.Request
 import java.io.File
 import java.io.FileOutputStream
@@ -82,19 +85,28 @@ class MainState(application: Application) : AndroidViewModel(application) {
         }
     }
 
-    fun fetch(token: String) {
+    suspend fun fetch(token: String) {
+        val context = getApplication<Application>().applicationContext
         val request = Request.Builder()
             .url("${Env.QLOGIN_API}/me")
             .header("Authorization", "Bearer $token")
             .build()
         val response = Utils.httpClient.newCall(request).execute()
-        if (response.code == 200) {
-            val result = JSON.parseObject(response.body?.string())
-            response.close()
-            _user.value = UserItem(
-                result.getString("name"),
-                result.getString("avatar")
-            )
+        try {
+            if (response.code == 200) {
+                val result = JSON.parseObject(response.body?.string())
+                response.close()
+                _user.value = UserItem(
+                    result.getString("name"),
+                    result.getString("avatar")
+                )
+            }
+        }
+        catch (e: Exception) {
+            e.printStackTrace()
+            withContext(Dispatchers.Main) {
+                Toast.makeText(context, "网络好像不太好~", Toast.LENGTH_LONG).show()
+            }
         }
         _isDisableLogin.value = false
     }

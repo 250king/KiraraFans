@@ -1,7 +1,11 @@
+import io.sentry.android.gradle.extensions.InstrumentationFeature
+import io.sentry.android.gradle.instrumentation.logcat.LogcatLevel
+
 plugins {
     id("com.android.application")
     id("org.jetbrains.kotlin.android")
     id("com.mikepenz.aboutlibraries.plugin")
+    id("io.sentry.android.gradle")
     id("kotlin-parcelize")
 }
 
@@ -13,8 +17,8 @@ android {
         applicationId = "com.king250.kirafan"
         minSdk = 26
         targetSdk = 35
-        versionCode = 40000
-        versionName = "4.0.0"
+        versionCode = 40001
+        versionName = "4.0.1"
         testInstrumentationRunner = "androidx.test.runner.AndroidJUnitRunner"
         vectorDrawables {
             useSupportLibrary = true
@@ -37,7 +41,7 @@ android {
 
     buildTypes {
         release {
-            isMinifyEnabled = false
+            isMinifyEnabled = true
             proguardFiles(getDefaultProguardFile("proguard-android-optimize.txt"), "proguard-rules.pro")
         }
     }
@@ -69,11 +73,42 @@ android {
             useLegacyPackaging = true
         }
     }
+
+    sentry {
+        debug = false
+        org = "transmedia-studio"
+        projectName = "android"
+        authToken = System.getenv("SENTRY_AUTH_TOKEN")
+        url = null
+        includeProguardMapping = true
+        autoUploadProguardMapping = true
+        dexguardEnabled = false
+        uploadNativeSymbols = false
+        autoUploadNativeSymbols = true
+        includeNativeSources = false
+        includeSourceContext = false
+        additionalSourceDirsForSourceContext = emptySet()
+        tracingInstrumentation {
+            enabled = true
+            features = setOf(InstrumentationFeature.DATABASE, InstrumentationFeature.FILE_IO, InstrumentationFeature.OKHTTP, InstrumentationFeature.COMPOSE)
+            logcat {
+                enabled = true
+                minLevel = LogcatLevel.WARNING
+            }
+            excludes = emptySet()
+        }
+        autoInstallation {
+            enabled = true
+            sentryVersion = "7.14.0"
+        }
+        includeDependenciesReport = true
+        telemetry = true
+    }
 }
 
 dependencies {
     implementation(fileTree(mapOf("dir" to "libs", "include" to listOf("*.aar", "*.jar"))))
-    implementation(platform("androidx.compose:compose-bom:2024.09.01"))
+    implementation(platform("androidx.compose:compose-bom:2024.09.02"))
     implementation("androidx.activity:activity-compose:1.9.2")
     implementation("androidx.browser:browser:1.8.0")
     implementation("androidx.core:core-ktx:1.13.1")
@@ -89,10 +124,10 @@ dependencies {
     implementation("com.squareup.okhttp3:okhttp:4.12.0")
     implementation("com.squareup.okhttp3:okhttp-sse:4.12.0")
     implementation("io.coil-kt:coil-compose:2.6.0")
-    implementation("androidx.test:runner:1.6.1")
+    implementation("androidx.test:runner:1.6.2")
     implementation("androidx.test.espresso:espresso-core:3.6.1")
     testImplementation("junit:junit:4.13.2")
-    androidTestImplementation(platform("androidx.compose:compose-bom:2024.09.01"))
+    androidTestImplementation(platform("androidx.compose:compose-bom:2024.09.02"))
     androidTestImplementation("androidx.test.ext:junit:1.2.1")
     androidTestImplementation("androidx.test.espresso:espresso-core:3.6.1")
     androidTestImplementation("androidx.compose.ui:ui-test-junit4")

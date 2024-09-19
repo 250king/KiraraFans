@@ -17,6 +17,7 @@ import kotlinx.coroutines.Dispatchers
 import kotlinx.coroutines.flow.firstOrNull
 import kotlinx.coroutines.flow.map
 import kotlinx.coroutines.launch
+import kotlinx.coroutines.withContext
 import libv2ray.Libv2ray
 import libv2ray.V2RayPoint
 import libv2ray.V2RayVPNServiceSupportsSet
@@ -99,19 +100,47 @@ object ConnectorServiceManager {
         Toast.makeText(context, "启动中……", Toast.LENGTH_SHORT).show()
         CoroutineScope(Dispatchers.IO).launch {
             val token = context.dataStore.data.map{it[stringPreferencesKey("token")]}.firstOrNull()
-            val request = Request
-                .Builder()
-                .url("${Env.KIRARA_API}/config")
-                .header("Authorization", "Bearer $token")
-                .build()
-            val response = Utils.httpClient.newCall(request).execute()
-            if (response.code == 200) {
-                config = response.body?.string() ?: ""
-                val intent = Intent(context, ConnectorVpnService::class.java)
-                context.startService(intent)
+            try {
+                val request = Request
+                    .Builder()
+                    .url("${Env.KIRARA_API}/config")
+                    .header("Authorization", "Bearer $token")
+                    .build()
+                val response = Utils.httpClient.newCall(request).execute()
+                when (response.code) {
+                    200 -> {
+                        config = response.body?.string() ?: ""
+                        response.close()
+                        val intent = Intent(context, ConnectorVpnService::class.java)
+                        context.startService(intent)
+                    }
+                    403 -> {
+                        withContext(Dispatchers.Main) {
+                            Toast.makeText(context, "因为账号存在异常已暂时性封禁，去找管理员处理吧！", Toast.LENGTH_LONG).show()
+                        }
+                    }
+                    404 -> {
+                        withContext(Dispatchers.Main) {
+                            Toast.makeText(context, "你还没有使用资格哟！快去找管理员申请吧！", Toast.LENGTH_LONG).show()
+                        }
+                    }
+                    410 -> {
+                        withContext(Dispatchers.Main) {
+                            Toast.makeText(context, "账号过期了！快去找管理员续期吧！", Toast.LENGTH_LONG).show()
+                        }
+                    }
+                    in 500..599 -> {
+                        withContext(Dispatchers.Main) {
+                            Toast.makeText(context, "服务器炸了！", Toast.LENGTH_LONG).show()
+                        }
+                    }
+                }
             }
-            else {
-                Toast.makeText(context, "你没有权限哟！", Toast.LENGTH_LONG).show()
+            catch (e: Exception) {
+                e.printStackTrace()
+                withContext(Dispatchers.Main) {
+                    Toast.makeText(context, "网络好像不太好~", Toast.LENGTH_LONG).show()
+                }
             }
         }
     }

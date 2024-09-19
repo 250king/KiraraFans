@@ -4,16 +4,18 @@ import android.app.Application
 import androidx.lifecycle.AndroidViewModel
 import androidx.lifecycle.viewModelScope
 import com.king250.kirafan.Env
-import com.king250.kirafan.util.Utils
+import com.king250.kirafan.util.UserAgentInterceptor
 import kotlinx.coroutines.flow.MutableSharedFlow
 import kotlinx.coroutines.flow.MutableStateFlow
 import kotlinx.coroutines.flow.SharedFlow
 import kotlinx.coroutines.flow.StateFlow
 import kotlinx.coroutines.launch
+import okhttp3.OkHttpClient
 import okhttp3.Request
 import okhttp3.internal.sse.RealEventSource
 import okhttp3.sse.EventSource
 import okhttp3.sse.EventSourceListener
+import java.util.concurrent.TimeUnit
 
 class LoginState(application: Application) : AndroidViewModel(application) {
     private val _code = MutableStateFlow("")
@@ -45,7 +47,13 @@ class LoginState(application: Application) : AndroidViewModel(application) {
     })
 
     fun start() {
-        handler.connect(Utils.httpClient)
+        val client = OkHttpClient
+            .Builder()
+            .readTimeout(1, TimeUnit.DAYS)
+            .connectTimeout(1, TimeUnit.DAYS)
+            .addInterceptor(UserAgentInterceptor)
+            .build()
+        handler.connect(client)
     }
 
     fun stop() {

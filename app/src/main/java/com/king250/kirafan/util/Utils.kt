@@ -23,9 +23,9 @@ object UserAgentInterceptor : Interceptor {
 object Utils {
     val httpClient = OkHttpClient
         .Builder()
-        .readTimeout(1, TimeUnit.DAYS)
-        .connectTimeout(1, TimeUnit.DAYS)
         .addInterceptor(UserAgentInterceptor)
+        .readTimeout(10, TimeUnit.SECONDS)
+        .connectTimeout(10, TimeUnit.SECONDS)
         .build()
 
     fun getDID(): String {

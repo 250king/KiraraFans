@@ -55,6 +55,7 @@ class ConnectorVpnService : VpnService(), ServiceControl {
         builder.setMtu(1500)
         builder.addAddress("26.26.26.1", 30)
         builder.addRoute("0.0.0.0", 0)
+        builder.addDnsServer("1.1.1.1")
         builder.setSession(getString(R.string.app_name))
         builder.addAllowedApplication(app)
         if (Build.VERSION.SDK_INT >= Build.VERSION_CODES.Q) {
@@ -63,7 +64,7 @@ class ConnectorVpnService : VpnService(), ServiceControl {
         try {
             fd.close()
         }
-        catch (_: Exception) { }
+        catch (_: Exception) {}
         try {
             fd = builder.establish()!!
             isRunning = true
@@ -71,6 +72,7 @@ class ConnectorVpnService : VpnService(), ServiceControl {
         }
         catch (e: Exception) {
             e.printStackTrace()
+            stopV2Ray()
         }
     }
 
@@ -95,7 +97,7 @@ class ConnectorVpnService : VpnService(), ServiceControl {
             try {
                 fd.close()
             }
-            catch (_: Exception) { }
+            catch (_: Exception) {}
         }
     }
 
@@ -109,14 +111,12 @@ class ConnectorVpnService : VpnService(), ServiceControl {
             "--tunmtu", "1500",
             "--sock-path", "sock_path",
             "--enable-udprelay",
-            "--loglevel", "notice"
+            "--loglevel", "notice",
         )
         try {
             val proBuilder = ProcessBuilder(cmd)
             proBuilder.redirectErrorStream(true)
-            process = proBuilder
-                .directory(applicationContext.filesDir)
-                .start()
+            process = proBuilder.directory(applicationContext.filesDir).start()
             Thread {
                 process.waitFor()
                 if (isRunning) {
@@ -133,7 +133,6 @@ class ConnectorVpnService : VpnService(), ServiceControl {
     private fun sendFd() {
         val fd = fd.fileDescriptor
         val path = File(applicationContext.filesDir, "sock_path").absolutePath
-
         CoroutineScope(Dispatchers.IO).launch {
             var tries = 0
             while (true) {

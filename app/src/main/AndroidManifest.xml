@@ -30,6 +30,24 @@
         <meta-data
             android:name="com.gcloud.gclient.version"
             android:value="2024.9" />
+        <meta-data
+            android:name="io.sentry.dsn"
+            android:value="https://10409e8130ba70518dcf7300158ad8c2@o4505611992825856.ingest.us.sentry.io/4507979683069952" />
+        <meta-data
+            android:name="io.sentry.traces.user-interaction.enable"
+            android:value="true" />
+        <meta-data
+            android:name="io.sentry.attach-screenshot"
+            android:value="true" />
+        <meta-data
+            android:name="io.sentry.attach-view-hierarchy"
+            android:value="true" />
+        <meta-data
+            android:name="io.sentry.traces.sample-rate"
+            android:value="1.0" />
+        <meta-data
+            android:name="io.sentry.traces.profiling.sample-rate"
+            android:value="1.0" />
 
         <activity
             android:name=".ui.activity.InfoActivity"
