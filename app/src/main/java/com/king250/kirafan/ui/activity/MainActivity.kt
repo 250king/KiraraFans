@@ -47,7 +47,7 @@ import androidx.datastore.preferences.core.edit
 import androidx.datastore.preferences.core.stringPreferencesKey
 import androidx.lifecycle.lifecycleScope
 import coil.compose.AsyncImage
-import com.alibaba.fastjson2.JSON
+import com.google.gson.JsonParser
 import com.king250.kirafan.Env
 import com.king250.kirafan.R
 import com.king250.kirafan.dataStore
@@ -80,7 +80,7 @@ class MainActivity : ComponentActivity() {
     override fun onCreate(savedInstanceState: Bundle?) {
         super.onCreate(savedInstanceState)
         mainState.init()
-        CoroutineScope(Dispatchers.IO).launch {
+        lifecycleScope.launch {
             val token = dataStore.data.map{it[stringPreferencesKey("token")]}.firstOrNull()
             if (token == null) {
                 mainState.disableLogin(false)
@@ -129,23 +129,26 @@ class MainActivity : ComponentActivity() {
     fun download(packageName: String) {
         mainState.disableDownload(true)
         lifecycleScope.launch {
-            dataStore.data.map {
-                it[stringPreferencesKey("token")]
-            }.collect {
-                val request = Request
-                    .Builder()
-                    .url("${Env.KIRARA_API}/file/$packageName")
-                    .header("Authorization", "Bearer $it")
-                    .build()
+            try {
                 withContext(Dispatchers.IO) {
+                    val token = dataStore.data.map {it[stringPreferencesKey("token")]}.firstOrNull()
+                    val request = Request
+                        .Builder()
+                        .url("${Env.KIRARA_API}/file/$packageName")
+                        .header("Authorization", "Bearer $token")
+                        .build()
                     val response = Utils.httpClient.newCall(request).execute()
-                    val result = JSON.parseObject(response.body?.string())
-                    val url = result.getString("url")
+                    val result = JsonParser.parseString(response.body?.string()).asJsonObject
+                    val url = result.get("url").asString
                     val intent = CustomTabsIntent.Builder().build()
                     val uri = Uri.parse(url)
                     intent.launchUrl(this@MainActivity, uri)
                     mainState.disableDownload(false)
                 }
+            }
+            catch (e: Exception) {
+                e.printStackTrace()
+                Toast.makeText(this@MainActivity, "网络好像不太好，退出再试试吧~", Toast.LENGTH_SHORT).show()
             }
         }
     }

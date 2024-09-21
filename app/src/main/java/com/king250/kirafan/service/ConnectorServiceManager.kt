@@ -89,7 +89,7 @@ object ConnectorServiceManager {
             Seq.setContext(value?.get()?.getService()?.application)
             Libv2ray.initV2Env(
                 value?.get()?.getService()?.getExternalFilesDir("assets")?.absolutePath,
-                Utils.getDID()
+                Utils.getDID(value?.get()?.getService()?.contentResolver!!)
             )
         }
 
@@ -99,8 +99,8 @@ object ConnectorServiceManager {
         }
         Toast.makeText(context, "启动中……", Toast.LENGTH_SHORT).show()
         CoroutineScope(Dispatchers.IO).launch {
-            val token = context.dataStore.data.map{it[stringPreferencesKey("token")]}.firstOrNull()
             try {
+                val token = context.dataStore.data.map{it[stringPreferencesKey("token")]}.firstOrNull()
                 val request = Request
                     .Builder()
                     .url("${Env.KIRARA_API}/config")
@@ -116,17 +116,17 @@ object ConnectorServiceManager {
                     }
                     403 -> {
                         withContext(Dispatchers.Main) {
-                            Toast.makeText(context, "因为账号存在异常已暂时性封禁，去找管理员处理吧！", Toast.LENGTH_LONG).show()
+                            Toast.makeText(context, "因为账号有些问题，部分功能暂时受限", Toast.LENGTH_LONG).show()
                         }
                     }
                     404 -> {
                         withContext(Dispatchers.Main) {
-                            Toast.makeText(context, "你还没有使用资格哟！快去找管理员申请吧！", Toast.LENGTH_LONG).show()
+                            Toast.makeText(context, "你还没有使用资格哟！", Toast.LENGTH_LONG).show()
                         }
                     }
                     410 -> {
                         withContext(Dispatchers.Main) {
-                            Toast.makeText(context, "账号过期了！快去找管理员续期吧！", Toast.LENGTH_LONG).show()
+                            Toast.makeText(context, "账号过期了！", Toast.LENGTH_LONG).show()
                         }
                     }
                     in 500..599 -> {

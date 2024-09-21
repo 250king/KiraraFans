@@ -10,14 +10,21 @@ import android.widget.Toast
 import androidx.activity.ComponentActivity
 import androidx.activity.compose.setContent
 import androidx.activity.viewModels
+import androidx.compose.animation.core.LinearEasing
+import androidx.compose.animation.core.animateFloatAsState
+import androidx.compose.animation.core.tween
 import androidx.compose.foundation.layout.Arrangement
+import androidx.compose.foundation.layout.Box
 import androidx.compose.foundation.layout.Column
 import androidx.compose.foundation.layout.fillMaxSize
+import androidx.compose.foundation.layout.fillMaxWidth
+import androidx.compose.foundation.layout.padding
 import androidx.compose.material.icons.Icons
 import androidx.compose.material.icons.automirrored.filled.ArrowBack
 import androidx.compose.material3.ExperimentalMaterial3Api
 import androidx.compose.material3.Icon
 import androidx.compose.material3.IconButton
+import androidx.compose.material3.LinearProgressIndicator
 import androidx.compose.material3.MaterialTheme
 import androidx.compose.material3.Scaffold
 import androidx.compose.material3.Surface
@@ -29,10 +36,11 @@ import androidx.compose.runtime.collectAsState
 import androidx.compose.runtime.getValue
 import androidx.compose.ui.Alignment
 import androidx.compose.ui.Modifier
+import androidx.compose.ui.unit.dp
 import androidx.datastore.preferences.core.edit
 import androidx.datastore.preferences.core.stringPreferencesKey
 import androidx.lifecycle.lifecycleScope
-import com.alibaba.fastjson2.JSON
+import com.google.gson.JsonParser
 import com.king250.kirafan.Env
 import com.king250.kirafan.dataStore
 import com.king250.kirafan.model.data.UserItem
@@ -49,7 +57,6 @@ class LoginActivity : ComponentActivity() {
 
     override fun onCreate(savedInstanceState: Bundle?) {
         super.onCreate(savedInstanceState)
-        loginState.start()
         setContent {
             KiraraFansTheme {
                 Surface(modifier = Modifier.fillMaxSize(), color = MaterialTheme.colorScheme.background) {
@@ -59,19 +66,19 @@ class LoginActivity : ComponentActivity() {
         }
         lifecycleScope.launch {
             loginState.token.collect { token ->
-                withContext(Dispatchers.IO) {
-                    try {
+                try {
+                    withContext(Dispatchers.IO) {
                         val request = Request
                             .Builder()
                             .url("${Env.QLOGIN_API}/me")
                             .header("Authorization", "Bearer $token")
                             .build()
                         val response = Utils.httpClient.newCall(request).execute()
-                        val result = JSON.parseObject(response.body?.string()!!)
+                        val result = JsonParser.parseString(response.body?.string()!!).asJsonObject
                         val intent = Intent()
                         val user = UserItem(
-                            result.getString("name"),
-                            result.getString("avatar")
+                            result.get("name").asString,
+                            result.get("avatar").asString
                         )
                         response.close()
                         intent.putExtra("profile", user)
@@ -81,16 +88,22 @@ class LoginActivity : ComponentActivity() {
                         }
                         finish()
                     }
-                    catch (e: Exception) {
-                        e.printStackTrace()
-                    }
+                }
+                catch (e: Exception) {
+                    e.printStackTrace()
+                    Toast.makeText(this@LoginActivity, "网络好像不太好，退出再试试吧~", Toast.LENGTH_SHORT).show()
                 }
             }
         }
     }
 
-    override fun onDestroy() {
-        super.onDestroy()
+    override fun onResume() {
+        super.onResume()
+        loginState.start()
+    }
+
+    override fun onPause() {
+        super.onPause()
         loginState.stop()
     }
 }
@@ -101,6 +114,14 @@ class LoginActivity : ComponentActivity() {
 @Composable
 fun Main(activity: LoginActivity) {
     val code by activity.loginState.code.collectAsState()
+    val time by activity.loginState.time.collectAsState()
+    val anime by activity.loginState.anime.collectAsState()
+    val activate by activity.loginState.activate.collectAsState()
+    val now by animateFloatAsState(
+        targetValue = time,
+        label = "",
+        animationSpec = tween(durationMillis = anime, easing = LinearEasing)
+    )
 
     Scaffold(
         topBar = {
@@ -119,25 +140,29 @@ fun Main(activity: LoginActivity) {
                 }
             )
         }
-    ) {
-        Column(
-            modifier = Modifier.fillMaxSize(),
-            verticalArrangement = Arrangement.Center,
-            horizontalAlignment = Alignment.CenterHorizontally
-        ) {
-            Text(code, style = MaterialTheme.typography.displayLarge)
-            Text("请向各个可用平台发送该代码完成登录")
-            TextButton(
-                onClick = {
-                    if (code.isNotEmpty()) {
-                        val cm = activity
-                            .getSystemService(Context.CLIPBOARD_SERVICE) as ClipboardManager
-                        cm.setPrimaryClip(ClipData.newPlainText(null, code))
-                        Toast.makeText(activity, "已成功复制到剪切板", Toast.LENGTH_SHORT).show()
-                    }
-                }
+    ) { innerPadding ->
+        Box(Modifier.padding(innerPadding)) {
+            if (activate) {
+                LinearProgressIndicator(modifier = Modifier.fillMaxWidth(), progress = {now})
+            }
+            Column(
+                modifier = Modifier.fillMaxSize(),
+                verticalArrangement = Arrangement.Center,
+                horizontalAlignment = Alignment.CenterHorizontally
             ) {
-                Text("复制该代码")
+                Text(code, style = MaterialTheme.typography.displayLarge)
+                Text("请向各个可用平台发送该代码完成登录", Modifier.padding(vertical = 16.dp))
+                TextButton(
+                    onClick = {
+                        if (code.matches(Regex("^[0-9]+$"))) {
+                            val cm = activity.getSystemService(Context.CLIPBOARD_SERVICE) as ClipboardManager
+                            cm.setPrimaryClip(ClipData.newPlainText(null, code))
+                            Toast.makeText(activity, "已成功复制到剪切板", Toast.LENGTH_SHORT).show()
+                        }
+                    }
+                ) {
+                    Text("复制该代码")
+                }
             }
         }
     }

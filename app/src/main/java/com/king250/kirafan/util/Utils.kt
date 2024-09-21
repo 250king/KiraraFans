@@ -1,7 +1,8 @@
 package com.king250.kirafan.util
 
+import android.annotation.SuppressLint
+import android.content.ContentResolver
 import android.provider.Settings
-import android.util.Base64
 import com.king250.kirafan.BuildConfig
 import okhttp3.Interceptor
 import okhttp3.Interceptor.Chain
@@ -28,8 +29,9 @@ object Utils {
         .connectTimeout(10, TimeUnit.SECONDS)
         .build()
 
-    fun getDID(): String {
-        val androidId = Settings.Secure.ANDROID_ID.toByteArray(Charsets.UTF_8)
-        return Base64.encodeToString(androidId.copyOf(32), Base64.NO_PADDING.or(Base64.URL_SAFE))
+    @SuppressLint("HardwareIds")
+    fun getDID(contentResolver: ContentResolver): String {
+        val androidId = Settings.Secure.getString(contentResolver, Settings.Secure.ANDROID_ID)
+        return androidId
     }
 }

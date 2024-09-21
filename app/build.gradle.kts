@@ -15,10 +15,10 @@ android {
 
     defaultConfig {
         applicationId = "com.king250.kirafan"
-        minSdk = 26
+        minSdk = 24
         targetSdk = 35
-        versionCode = 40001
-        versionName = "4.0.1"
+        versionCode = 40100
+        versionName = "4.1.0"
         testInstrumentationRunner = "androidx.test.runner.AndroidJUnitRunner"
         vectorDrawables {
             useSupportLibrary = true
@@ -118,7 +118,7 @@ dependencies {
     implementation("androidx.compose.material3:material3")
     implementation("androidx.datastore:datastore-preferences:1.1.1")
     implementation("androidx.multidex:multidex:2.0.1")
-    implementation("com.alibaba.fastjson2:fastjson2-kotlin:2.0.52")
+    implementation("com.google.code.gson:gson:2.11.0")
     implementation("com.mikepenz:aboutlibraries-core:11.1.4")
     implementation("com.mikepenz:aboutlibraries-compose-m3:11.1.4")
     implementation("com.squareup.okhttp3:okhttp:4.12.0")
