@@ -57,13 +57,6 @@ class LoginActivity : ComponentActivity() {
 
     override fun onCreate(savedInstanceState: Bundle?) {
         super.onCreate(savedInstanceState)
-        setContent {
-            KiraraFansTheme {
-                Surface(modifier = Modifier.fillMaxSize(), color = MaterialTheme.colorScheme.background) {
-                    Main(this)
-                }
-            }
-        }
         lifecycleScope.launch {
             loginState.token.collect { token ->
                 try {
@@ -91,19 +84,28 @@ class LoginActivity : ComponentActivity() {
                 }
                 catch (e: Exception) {
                     e.printStackTrace()
-                    Toast.makeText(this@LoginActivity, "网络好像不太好，退出再试试吧~", Toast.LENGTH_SHORT).show()
+                    withContext(Dispatchers.Main) {
+                        Toast.makeText(this@LoginActivity, "网络好像不太好，退出再试试吧~", Toast.LENGTH_SHORT).show()
+                    }
+                }
+            }
+        }
+        setContent {
+            KiraraFansTheme {
+                Surface(modifier = Modifier.fillMaxSize(), color = MaterialTheme.colorScheme.background) {
+                    Main(this)
                 }
             }
         }
     }
 
-    override fun onResume() {
-        super.onResume()
+    override fun onStart() {
+        super.onStart()
         loginState.start()
     }
 
-    override fun onPause() {
-        super.onPause()
+    override fun onStop() {
+        super.onStop()
         loginState.stop()
     }
 }

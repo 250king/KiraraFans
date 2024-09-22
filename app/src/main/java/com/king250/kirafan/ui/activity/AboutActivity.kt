@@ -56,6 +56,11 @@ class AboutActivity : ComponentActivity() {
 fun Main(activity: AboutActivity) {
     val scrollState = rememberScrollState()
     val items = listOf(
+        AboutItem("获得最新版") {
+            val intent = CustomTabsIntent.Builder().build()
+            val uri = Uri.parse("https://github.com/gd1000m/Kirara-Repo/releases/latest")
+            intent.launchUrl(activity, uri)
+        },
         AboutItem("一起来玩") {
             val intent = CustomTabsIntent.Builder().build()
             val uri = Uri.parse("https://discord.gg/YmbbxDsbNB")

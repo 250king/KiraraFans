@@ -5,6 +5,8 @@ object Env {
 
     const val KIRARA_API = "https://vpc.sparklefantasia.com/proxy/api"
 
+    const val RELEASE_API = "https://api.github.com/repos/gd1000m/Kirara-Repo/releases/latest"
+
     const val PROXY_HOST = "vpc.sparklefantasia.com:443"
 
     const val SERVICE_CHANNEL = "com.king250.kirafan.service.ConnectorVpnService"

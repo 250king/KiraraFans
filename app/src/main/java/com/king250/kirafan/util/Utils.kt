@@ -31,7 +31,10 @@ object Utils {
 
     @SuppressLint("HardwareIds")
     fun getDID(contentResolver: ContentResolver): String {
-        val androidId = Settings.Secure.getString(contentResolver, Settings.Secure.ANDROID_ID)
-        return androidId
+        return Settings.Secure.getString(contentResolver, Settings.Secure.ANDROID_ID)
+    }
+
+    fun getUSB(contentResolver: ContentResolver): Boolean {
+        return Settings.Secure.getInt(contentResolver, Settings.Global.ADB_ENABLED, 0) == 1
     }
 }

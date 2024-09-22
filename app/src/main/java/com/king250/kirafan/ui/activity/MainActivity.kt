@@ -6,6 +6,7 @@ import android.net.Uri
 import android.net.VpnService
 import android.os.Build
 import android.os.Bundle
+import android.provider.Settings
 import android.widget.Toast
 import androidx.activity.ComponentActivity
 import androidx.activity.compose.setContent
@@ -48,6 +49,7 @@ import androidx.datastore.preferences.core.stringPreferencesKey
 import androidx.lifecycle.lifecycleScope
 import coil.compose.AsyncImage
 import com.google.gson.JsonParser
+import com.king250.kirafan.BuildConfig
 import com.king250.kirafan.Env
 import com.king250.kirafan.R
 import com.king250.kirafan.dataStore
@@ -65,7 +67,6 @@ import kotlinx.coroutines.launch
 import kotlinx.coroutines.withContext
 import okhttp3.Request
 
-@Suppress("DEPRECATION")
 class MainActivity : ComponentActivity() {
     lateinit var loginActivity: ActivityResultLauncher<Intent>
 
@@ -77,16 +78,22 @@ class MainActivity : ComponentActivity() {
 
     val mainState: MainState by viewModels()
 
+    @Suppress("DEPRECATION")
     override fun onCreate(savedInstanceState: Bundle?) {
         super.onCreate(savedInstanceState)
-        mainState.init()
         lifecycleScope.launch {
             val token = dataStore.data.map{it[stringPreferencesKey("token")]}.firstOrNull()
+            mainState.init()
             if (token == null) {
                 mainState.disableLogin(false)
             }
             else {
                 mainState.fetch(token)
+            }
+            mainState.upgrade.collect { version ->
+                if (version != BuildConfig.VERSION_NAME) {
+                    Toast.makeText(this@MainActivity, "发现新版本了！", Toast.LENGTH_SHORT).show()
+                }
             }
         }
         loginActivity = registerForActivityResult(ActivityResultContracts.StartActivityForResult()) {
@@ -143,13 +150,13 @@ class MainActivity : ComponentActivity() {
                     val intent = CustomTabsIntent.Builder().build()
                     val uri = Uri.parse(url)
                     intent.launchUrl(this@MainActivity, uri)
-                    mainState.disableDownload(false)
                 }
             }
             catch (e: Exception) {
                 e.printStackTrace()
                 Toast.makeText(this@MainActivity, "网络好像不太好，退出再试试吧~", Toast.LENGTH_SHORT).show()
             }
+            mainState.disableDownload(false)
         }
     }
 }
@@ -165,6 +172,8 @@ fun Main(activity: MainActivity) {
     val isLoginState by activity.mainState.isDisableLogin.collectAsState()
     val isDownloadDisable by activity.mainState.isDisableDownload.collectAsState()
     var unsupportedDialog by remember { mutableStateOf(false) }
+    var usbWarningDialog by remember { mutableStateOf(false) }
+    var incurredDialog by remember { mutableStateOf(false) }
 
     Scaffold(
         topBar = {
@@ -260,8 +269,18 @@ fun Main(activity: MainActivity) {
                         }
                     }
                     else {
-                        val intent = activity.packageManager.getLaunchIntentForPackage(activity.app)
-                        activity.startActivity(intent)
+                        if (version != "3.6.0") {
+                            incurredDialog = true
+                        }
+                        else {
+                            if (Utils.getUSB(activity.contentResolver) && activity.app == "com.aniplex.kirarafantasia") {
+                                usbWarningDialog = true
+                            }
+                            else {
+                                val intent = activity.packageManager.getLaunchIntentForPackage(activity.app)
+                                activity.startActivity(intent)
+                            }
+                        }
                     }
                 }
             ) {
@@ -323,14 +342,14 @@ fun Main(activity: MainActivity) {
     if (unsupportedDialog) {
         AlertDialog(
             onDismissRequest = {
-                activity.mainState.disableDownload(false)
+                unsupportedDialog = false
             },
             title = {
                 Text("提示")
             },
             text = {
                 Text(
-                    text = "因为游戏自身限定，无法在Android 14+的设备运行。当然也可以通过安装VMOS并安装该启动器来继续游玩。请问是否要继续下载VMOS并安装？",
+                    text = "因为游戏不允许Android 14+的设备运行。只能通过安装VMOS并在内部安装好游戏后继续游玩。请问是否要继续下载VMOS并安装？",
                     lineHeight = 24.sp
                 )
             },
@@ -348,10 +367,96 @@ fun Main(activity: MainActivity) {
                 TextButton(
                     onClick = {
                         unsupportedDialog = false
-                        activity.mainState.disableDownload(false)
                     }
                 ) {
                     Text("取消")
+                }
+            }
+        )
+    }
+    if (usbWarningDialog) {
+        AlertDialog(
+            onDismissRequest = {
+                usbWarningDialog = false
+            },
+            title = {
+                Text("提示")
+            },
+            text = {
+                Text(
+                    text = "你好像没有把USB调试给关闭，这会导致游戏自动闪退，请问要前往设置关闭还是继续游玩？",
+                    lineHeight = 24.sp
+                )
+            },
+            confirmButton = {
+                TextButton(
+                    onClick = {
+                        val intent = Intent(Settings.ACTION_APPLICATION_DEVELOPMENT_SETTINGS)
+                        activity.startActivity(intent)
+                        usbWarningDialog = false
+                    }
+                ) {
+                    Text("关闭USB调试")
+                }
+            },
+            dismissButton = {
+                TextButton(
+                    onClick = {
+                        val intent = activity.packageManager.getLaunchIntentForPackage(activity.app)
+                        activity.startActivity(intent)
+                        usbWarningDialog = false
+                    }
+                ) {
+                    Text("继续游玩")
+                }
+            }
+        )
+    }
+    if (incurredDialog) {
+        AlertDialog(
+            onDismissRequest = {
+                incurredDialog = false
+            },
+            title = {
+                Text("提示")
+            },
+            text = {
+                if (version == "3.7.0") {
+                    val text = """
+                        你好像使用的是骨灰盒版本，这个版本是无法正常游戏的，只能删掉并安装正确的版本。
+                        由于这是你最珍贵的存档之一，我们非常不推荐以抛弃骨灰盒的代价来玩，建议换别的设备继续玩吧！
+                        如果你已知悉相关风险或者确定骨灰盒没有任何内容，请自行将骨灰盒删除后再试。
+                    """.trimIndent()
+                    Text(text, lineHeight = 24.sp)
+                }
+                else {
+                    Text("只有3.6.0才能正常使用哟！是否要下载并安装对应的版本？", lineHeight = 24.sp)
+                }
+            },
+            confirmButton = {
+                if (version != "3.7.0") {
+                    TextButton(
+                        onClick = {
+                            incurredDialog = false
+                            activity.download(activity.app)
+                        }
+                    ) {
+                        Text("确定")
+                    }
+                }
+            },
+            dismissButton = {
+                TextButton(
+                    onClick = {
+                        incurredDialog = false
+                    }
+                ) {
+                    if (version == "3.7.0") {
+                        Text("关闭")
+                    }
+                    else {
+                        Text("取消")
+                    }
                 }
             }
         )

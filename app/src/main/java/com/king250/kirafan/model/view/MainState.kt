@@ -14,7 +14,9 @@ import com.king250.kirafan.Env
 import com.king250.kirafan.model.data.UserItem
 import com.king250.kirafan.util.Utils
 import kotlinx.coroutines.Dispatchers
+import kotlinx.coroutines.flow.MutableSharedFlow
 import kotlinx.coroutines.flow.MutableStateFlow
+import kotlinx.coroutines.flow.SharedFlow
 import kotlinx.coroutines.flow.StateFlow
 import kotlinx.coroutines.withContext
 import okhttp3.Request
@@ -33,6 +35,8 @@ class MainState(application: Application) : AndroidViewModel(application) {
     private val _isDisableDownload = MutableStateFlow(false)
 
     private val _isConnect = MutableStateFlow(false)
+
+    private val _upgrade = MutableSharedFlow<String>()
 
     private val handler = object : BroadcastReceiver() {
         override fun onReceive(p0: Context?, p1: Intent?) {
@@ -61,12 +65,14 @@ class MainState(application: Application) : AndroidViewModel(application) {
 
     val isConnect: StateFlow<Boolean> = _isConnect
 
+    val upgrade: SharedFlow<String> = _upgrade
+
     override fun onCleared() {
         super.onCleared()
         getApplication<Application>().unregisterReceiver(handler)
     }
 
-    fun init() {
+    suspend fun init() {
         val filter = IntentFilter(Env.UI_CHANNEL)
         val assets = getApplication<Application>().applicationContext.assets
         val dir = getApplication<Application>().getExternalFilesDir("assets")?.absolutePath
@@ -75,10 +81,12 @@ class MainState(application: Application) : AndroidViewModel(application) {
                 val input = assets.open(it)
                 val file = File(dir, it)
                 if (!file.exists()) {
-                    val output = FileOutputStream(file)
-                    input.copyTo(output)
-                    input.close()
-                    output.close()
+                    withContext(Dispatchers.IO) {
+                        val output = FileOutputStream(file)
+                        input.copyTo(output)
+                        input.close()
+                        output.close()
+                    }
                 }
             }
         }
@@ -88,12 +96,37 @@ class MainState(application: Application) : AndroidViewModel(application) {
         else {
             getApplication<Application>().registerReceiver(handler, filter)
         }
+        try {
+            withContext(Dispatchers.IO) {
+                val request = Request
+                    .Builder()
+                    .url(Env.RELEASE_API)
+                    .build()
+                val response = Utils.httpClient.newCall(request).execute()
+                if (response.code == 200) {
+                    val result = JsonParser.parseString(response.body?.string()).asJsonObject
+                    _upgrade.emit(result.get("tag_name").asString)
+                }
+                else {
+                    withContext(Dispatchers.Main) {
+                        val context = getApplication<Application>().applicationContext
+                        Toast.makeText(context, "无法获得更新状态，自己还是去看看吧！", Toast.LENGTH_LONG).show()
+                    }
+                }
+            }
+        }
+        catch (e: Exception) {
+            e.printStackTrace()
+            val context = getApplication<Application>().applicationContext
+            Toast.makeText(context, "网络好像不太好~", Toast.LENGTH_LONG).show()
+        }
     }
 
     suspend fun fetch(token: String) {
         try {
             withContext(Dispatchers.IO) {
-                val request = Request.Builder()
+                val request = Request
+                    .Builder()
                     .url("${Env.QLOGIN_API}/me")
                     .header("Authorization", "Bearer $token")
                     .build()
@@ -109,8 +142,8 @@ class MainState(application: Application) : AndroidViewModel(application) {
             }
         }
         catch (e: Exception) {
-            val context = getApplication<Application>().applicationContext
             e.printStackTrace()
+            val context = getApplication<Application>().applicationContext
             Toast.makeText(context, "网络好像不太好~", Toast.LENGTH_LONG).show()
         }
         _isDisableLogin.value = false
