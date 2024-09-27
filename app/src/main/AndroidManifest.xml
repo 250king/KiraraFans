@@ -19,7 +19,6 @@
         android:requestLegacyExternalStorage="true"
         android:roundIcon="@mipmap/ic_launcher_round"
         android:supportsRtl="true"
-        android:theme="@style/Theme.KiraraTools"
         tools:targetApi="31">
         <meta-data
             android:name="com.gcloud.author"
@@ -52,23 +51,23 @@
         <activity
             android:name=".ui.activity.InfoActivity"
             android:exported="false"
-            android:theme="@style/Theme.KiraraTools" />
+            android:theme="@style/Theme.KiraraFans" />
         <activity
             android:name=".ui.activity.AboutActivity"
             android:exported="false"
-            android:theme="@style/Theme.KiraraTools" />
+            android:theme="@style/Theme.KiraraFans" />
         <activity
             android:name=".ui.activity.LicenseActivity"
             android:exported="false"
-            android:theme="@style/Theme.KiraraTools" />
+            android:theme="@style/Theme.KiraraFans" />
         <activity
             android:name=".ui.activity.LoginActivity"
             android:exported="false"
-            android:theme="@style/Theme.KiraraTools" />
+            android:theme="@style/Theme.KiraraFans" />
         <activity
             android:name=".ui.activity.MainActivity"
             android:exported="true"
-            android:theme="@style/Theme.KiraraTools">
+            android:theme="@style/Theme.LaunchTheme">
             <intent-filter>
                 <action android:name="android.intent.action.MAIN" />
                 <category android:name="android.intent.category.LAUNCHER" />

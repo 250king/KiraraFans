@@ -6,6 +6,7 @@ import android.content.ClipboardManager
 import android.content.Context
 import android.content.Intent
 import android.os.Bundle
+import android.util.Log
 import android.widget.Toast
 import androidx.activity.ComponentActivity
 import androidx.activity.compose.setContent
@@ -40,60 +41,38 @@ import androidx.compose.ui.unit.dp
 import androidx.datastore.preferences.core.edit
 import androidx.datastore.preferences.core.stringPreferencesKey
 import androidx.lifecycle.lifecycleScope
-import com.google.gson.JsonParser
-import com.king250.kirafan.Env
 import com.king250.kirafan.dataStore
 import com.king250.kirafan.model.data.UserItem
 import com.king250.kirafan.model.view.LoginState
 import com.king250.kirafan.ui.theme.KiraraFansTheme
-import com.king250.kirafan.util.Utils
 import kotlinx.coroutines.Dispatchers
 import kotlinx.coroutines.launch
 import kotlinx.coroutines.withContext
-import okhttp3.Request
 
 class LoginActivity : ComponentActivity() {
     val loginState: LoginState by viewModels()
 
     override fun onCreate(savedInstanceState: Bundle?) {
         super.onCreate(savedInstanceState)
-        lifecycleScope.launch {
-            loginState.token.collect { token ->
-                try {
-                    withContext(Dispatchers.IO) {
-                        val request = Request
-                            .Builder()
-                            .url("${Env.QLOGIN_API}/me")
-                            .header("Authorization", "Bearer $token")
-                            .build()
-                        val response = Utils.httpClient.newCall(request).execute()
-                        val result = JsonParser.parseString(response.body?.string()!!).asJsonObject
-                        val intent = Intent()
-                        val user = UserItem(
-                            result.get("name").asString,
-                            result.get("avatar").asString
-                        )
-                        response.close()
-                        intent.putExtra("profile", user)
-                        setResult(RESULT_OK, intent)
-                        dataStore.edit {
-                            it[stringPreferencesKey("token")] = token
-                        }
-                        finish()
-                    }
-                }
-                catch (e: Exception) {
-                    e.printStackTrace()
-                    withContext(Dispatchers.Main) {
-                        Toast.makeText(this@LoginActivity, "网络好像不太好，退出再试试吧~", Toast.LENGTH_SHORT).show()
-                    }
-                }
-            }
-        }
         setContent {
             KiraraFansTheme {
                 Surface(modifier = Modifier.fillMaxSize(), color = MaterialTheme.colorScheme.background) {
                     Main(this)
+                }
+            }
+        }
+        lifecycleScope.launch {
+            loginState.session.collect { text ->
+                val result = text.split(";")
+                val intent = Intent()
+                val user = UserItem(result[1], result[2])
+                intent.putExtra("profile", user)
+                setResult(RESULT_OK, intent)
+                withContext(Dispatchers.IO) {
+                    dataStore.edit {
+                        it[stringPreferencesKey("token")] = result[0]
+                    }
+                    finish()
                 }
             }
         }

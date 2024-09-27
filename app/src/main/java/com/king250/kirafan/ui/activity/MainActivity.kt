@@ -14,12 +14,17 @@ import androidx.activity.result.ActivityResultLauncher
 import androidx.activity.result.contract.ActivityResultContracts
 import androidx.activity.viewModels
 import androidx.browser.customtabs.CustomTabsIntent
+import androidx.compose.foundation.Image
+import androidx.compose.foundation.layout.Arrangement
 import androidx.compose.foundation.layout.Column
+import androidx.compose.foundation.layout.Spacer
 import androidx.compose.foundation.layout.fillMaxSize
+import androidx.compose.foundation.layout.height
 import androidx.compose.foundation.layout.padding
 import androidx.compose.foundation.layout.size
 import androidx.compose.foundation.rememberScrollState
 import androidx.compose.foundation.shape.CircleShape
+import androidx.compose.foundation.shape.RoundedCornerShape
 import androidx.compose.foundation.verticalScroll
 import androidx.compose.material.icons.Icons
 import androidx.compose.material.icons.filled.Info
@@ -39,15 +44,24 @@ import androidx.compose.runtime.getValue
 import androidx.compose.runtime.mutableStateOf
 import androidx.compose.runtime.remember
 import androidx.compose.runtime.setValue
+import androidx.compose.ui.Alignment
 import androidx.compose.ui.Modifier
 import androidx.compose.ui.draw.clip
 import androidx.compose.ui.res.painterResource
 import androidx.compose.ui.unit.dp
 import androidx.compose.ui.unit.sp
+import androidx.core.splashscreen.SplashScreen
+import androidx.core.splashscreen.SplashScreen.Companion.installSplashScreen
 import androidx.datastore.preferences.core.edit
 import androidx.datastore.preferences.core.stringPreferencesKey
 import androidx.lifecycle.lifecycleScope
+import coil.ImageLoader
+import coil.annotation.ExperimentalCoilApi
 import coil.compose.AsyncImage
+import coil.compose.rememberAsyncImagePainter
+import coil.decode.GifDecoder
+import coil.decode.ImageDecoderDecoder
+import coil.request.ImageRequest
 import com.google.gson.JsonParser
 import com.king250.kirafan.BuildConfig
 import com.king250.kirafan.Env
@@ -66,11 +80,18 @@ import kotlinx.coroutines.flow.map
 import kotlinx.coroutines.launch
 import kotlinx.coroutines.withContext
 import okhttp3.Request
+import java.io.File
 
 class MainActivity : ComponentActivity() {
     lateinit var loginActivity: ActivityResultLauncher<Intent>
 
     lateinit var permissionActivity: ActivityResultLauncher<Intent>
+
+    private lateinit var compatSplashScreen: SplashScreen
+
+    lateinit var apkAbi: String
+
+    val deviceAbi: String = Build.SUPPORTED_ABIS[0]
 
     val isSpecial = Build.VERSION.SDK_INT >= Build.VERSION_CODES.UPSIDE_DOWN_CAKE
 
@@ -78,45 +99,68 @@ class MainActivity : ComponentActivity() {
 
     val mainState: MainState by viewModels()
 
+    @OptIn(ExperimentalCoilApi::class)
     @Suppress("DEPRECATION")
     override fun onCreate(savedInstanceState: Bundle?) {
+        compatSplashScreen = installSplashScreen()
         super.onCreate(savedInstanceState)
-        lifecycleScope.launch {
-            val token = dataStore.data.map{it[stringPreferencesKey("token")]}.firstOrNull()
-            mainState.init()
-            if (token == null) {
-                mainState.disableLogin(false)
+        apkAbi = when (File(applicationInfo.nativeLibraryDir).name) {
+            "arm64" -> "arm64-v8a"
+            "arm" -> "armeabi-v7a"
+            else -> File(applicationInfo.nativeLibraryDir).name
+        }
+        if (deviceAbi == apkAbi) {
+            compatSplashScreen.setKeepOnScreenCondition {
+                mainState.isDisableLogin.value
             }
-            else {
-                mainState.fetch(token)
-            }
-            mainState.upgrade.collect { version ->
-                if (version != BuildConfig.VERSION_NAME) {
-                    Toast.makeText(this@MainActivity, "发现新版本了！", Toast.LENGTH_SHORT).show()
+            loginActivity = registerForActivityResult(ActivityResultContracts.StartActivityForResult()) {
+                if (it.resultCode == RESULT_OK) {
+                    val profile = if (Build.VERSION.SDK_INT >= Build.VERSION_CODES.TIRAMISU) {
+                        it.data?.getParcelableExtra("profile", UserItem::class.java)!!
+                    }
+                    else {
+                        it.data?.getParcelableExtra("profile")!!
+                    }
+                    mainState.login(profile)
+                    Toast.makeText(this, "欢迎回来！${profile.name}", Toast.LENGTH_SHORT).show()
                 }
             }
-        }
-        loginActivity = registerForActivityResult(ActivityResultContracts.StartActivityForResult()) {
-            if (it.resultCode == RESULT_OK) {
-                val profile = if (Build.VERSION.SDK_INT >= Build.VERSION_CODES.TIRAMISU) {
-                    it.data?.getParcelableExtra("profile", UserItem::class.java)!!
+            permissionActivity = registerForActivityResult(ActivityResultContracts.StartActivityForResult()) {
+                if (it.resultCode == RESULT_OK) {
+                    ConnectorServiceManager.startV2Ray(this)
+                }
+            }
+            setContent {
+                KiraraFansTheme {
+                    Surface(Modifier.fillMaxSize(), color = MaterialTheme.colorScheme.background) {
+                        Main(this@MainActivity)
+                    }
+                }
+            }
+            lifecycleScope.launch {
+                val token = dataStore.data.map{it[stringPreferencesKey("token")]}.firstOrNull()
+                mainState.init()
+                if (token == null) {
+                    mainState.disableLogin(false)
                 }
                 else {
-                    it.data?.getParcelableExtra("profile")!!
+                    mainState.fetch(token)
                 }
-                mainState.login(profile)
-                Toast.makeText(this, "欢迎回来！${profile.name}", Toast.LENGTH_SHORT).show()
+                mainState.check()
+                mainState.upgrade.collect { version ->
+                    if (version != BuildConfig.VERSION_NAME) {
+                        Toast.makeText(this@MainActivity, "发现新版本了！", Toast.LENGTH_SHORT).show()
+                    }
+                }
             }
         }
-        permissionActivity = registerForActivityResult(ActivityResultContracts.StartActivityForResult()) {
-            if (it.resultCode == RESULT_OK) {
-                ConnectorServiceManager.startV2Ray(this)
-            }
-        }
-        setContent {
-            KiraraFansTheme {
-                Surface(Modifier.fillMaxSize(), color = MaterialTheme.colorScheme.background) {
-                    Main(this)
+        else {
+            compatSplashScreen.setKeepOnScreenCondition{false}
+            setContent {
+                KiraraFansTheme {
+                    Surface(Modifier.fillMaxSize(), color = MaterialTheme.colorScheme.background) {
+                        Unsupported(this)
+                    }
                 }
             }
         }
@@ -161,9 +205,9 @@ class MainActivity : ComponentActivity() {
     }
 }
 
+@OptIn(ExperimentalMaterial3Api::class)
 @Composable
 @SuppressLint("UnusedMaterial3ScaffoldPaddingParameter")
-@OptIn(ExperimentalMaterial3Api::class)
 fun Main(activity: MainActivity) {
     val scrollState = rememberScrollState()
     val user by activity.mainState.user.collectAsState()
@@ -185,6 +229,7 @@ fun Main(activity: MainActivity) {
         }
     ) { innerPadding ->
         Column(Modifier.padding(innerPadding).verticalScroll(scrollState)) {
+            Spacer(Modifier.height(16.dp))
             CardButton(
                 icon = {
                     Icon(
@@ -269,11 +314,11 @@ fun Main(activity: MainActivity) {
                         }
                     }
                     else {
-                        if (version != "3.6.0") {
+                        if (activity.app == "com.aniplex.kirarafantasia" && version != "3.6.0") {
                             incurredDialog = true
                         }
                         else {
-                            if (Utils.getUSB(activity.contentResolver) && activity.app == "com.aniplex.kirarafantasia") {
+                            if (activity.app == "com.aniplex.kirarafantasia" && Utils.getUSB(activity.contentResolver)) {
                                 usbWarningDialog = true
                             }
                             else {
@@ -460,5 +505,50 @@ fun Main(activity: MainActivity) {
                 }
             }
         )
+    }
+}
+
+@Composable
+@ExperimentalCoilApi
+@SuppressLint("UnusedMaterial3ScaffoldPaddingParameter")
+fun Unsupported(activity: MainActivity) {
+    val imageLoader = ImageLoader
+        .Builder(activity)
+        .components {
+            if (Build.VERSION.SDK_INT >= 28) {
+                add(ImageDecoderDecoder.Factory())
+            } else {
+                add(GifDecoder.Factory())
+            }
+        }
+        .build()
+
+    Scaffold { innerPadding ->
+        Column(
+            Modifier.padding(innerPadding).fillMaxSize(),
+            verticalArrangement = Arrangement.Center,
+            horizontalAlignment = Alignment.CenterHorizontally
+        ) {
+            Image(
+                modifier = Modifier.size(279.dp, 173.dp).clip(RoundedCornerShape(10.dp)),
+                painter = rememberAsyncImagePainter(
+                    model = ImageRequest
+                        .Builder(activity)
+                        .data(data = R.drawable.bocchi)
+                        .apply(
+                            block = fun ImageRequest.Builder.() {
+                                crossfade(true)
+                            }
+                        )
+                        .build(),
+                    imageLoader = imageLoader
+                ),
+                contentDescription = null
+            )
+            Text(
+                text = "你好像安装了与设备CPU不匹配的ABI变体，你应该安装${activity.deviceAbi}而不是当前的${activity.apkAbi}",
+                modifier = Modifier.padding(top = 16.dp, start = 16.dp, end = 16.dp)
+            )
+        }
     }
 }

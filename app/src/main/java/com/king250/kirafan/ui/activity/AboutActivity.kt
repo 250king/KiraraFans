@@ -2,34 +2,50 @@ package com.king250.kirafan.ui.activity
 
 import android.annotation.SuppressLint
 import android.content.Intent
-import android.graphics.Bitmap
-import android.graphics.Canvas
 import android.net.Uri
+import android.os.Build
 import android.os.Bundle
 import androidx.activity.ComponentActivity
 import androidx.activity.compose.setContent
 import androidx.browser.customtabs.CustomTabsIntent
 import androidx.compose.foundation.Image
 import androidx.compose.foundation.clickable
-import androidx.compose.foundation.layout.*
+import androidx.compose.foundation.layout.Column
+import androidx.compose.foundation.layout.Spacer
+import androidx.compose.foundation.layout.fillMaxSize
+import androidx.compose.foundation.layout.fillMaxWidth
+import androidx.compose.foundation.layout.height
+import androidx.compose.foundation.layout.padding
+import androidx.compose.foundation.layout.requiredSize
+import androidx.compose.foundation.layout.size
 import androidx.compose.foundation.rememberScrollState
 import androidx.compose.foundation.shape.CircleShape
 import androidx.compose.foundation.verticalScroll
 import androidx.compose.material.icons.Icons
 import androidx.compose.material.icons.automirrored.filled.ArrowBack
-import androidx.compose.material3.*
+import androidx.compose.material3.ExperimentalMaterial3Api
+import androidx.compose.material3.HorizontalDivider
+import androidx.compose.material3.Icon
+import androidx.compose.material3.IconButton
+import androidx.compose.material3.ListItem
+import androidx.compose.material3.MaterialTheme
+import androidx.compose.material3.Scaffold
+import androidx.compose.material3.Surface
+import androidx.compose.material3.Text
+import androidx.compose.material3.TopAppBar
 import androidx.compose.runtime.Composable
 import androidx.compose.ui.Alignment
 import androidx.compose.ui.Modifier
 import androidx.compose.ui.draw.clip
-import androidx.compose.ui.graphics.asImageBitmap
-import androidx.compose.ui.text.SpanStyle
 import androidx.compose.ui.text.buildAnnotatedString
-import androidx.compose.ui.text.style.TextDecoration
 import androidx.compose.ui.unit.dp
 import androidx.compose.ui.unit.sp
-import androidx.core.content.res.ResourcesCompat
+import coil.ImageLoader
 import coil.compose.AsyncImage
+import coil.compose.rememberAsyncImagePainter
+import coil.decode.GifDecoder
+import coil.decode.ImageDecoderDecoder
+import coil.request.ImageRequest
 import com.king250.kirafan.BuildConfig
 import com.king250.kirafan.R
 import com.king250.kirafan.model.data.AboutItem
@@ -55,6 +71,16 @@ class AboutActivity : ComponentActivity() {
 @Composable
 fun Main(activity: AboutActivity) {
     val scrollState = rememberScrollState()
+    val imageLoader = ImageLoader
+        .Builder(activity)
+        .components {
+            if (Build.VERSION.SDK_INT >= 28) {
+                add(ImageDecoderDecoder.Factory())
+            } else {
+                add(GifDecoder.Factory())
+            }
+        }
+        .build()
     val items = listOf(
         AboutItem("获得最新版") {
             val intent = CustomTabsIntent.Builder().build()
@@ -88,7 +114,7 @@ fun Main(activity: AboutActivity) {
     Scaffold(
         topBar = {
             TopAppBar(
-                title = { },
+                title = {},
                 navigationIcon = {
                     IconButton(
                         onClick = {
@@ -106,24 +132,22 @@ fun Main(activity: AboutActivity) {
                 modifier = Modifier.fillMaxWidth(),
                 horizontalAlignment = Alignment.CenterHorizontally
             ) {
-                ResourcesCompat.getDrawable(
-                    activity.resources,
-                    R.mipmap.ic_launcher_round, activity.theme
-                )?.let { drawable ->
-                    val bitmap = Bitmap.createBitmap(
-                        drawable.intrinsicWidth, drawable.intrinsicHeight,
-                        Bitmap.Config.ARGB_8888
-                    )
-                    val canvas = Canvas(bitmap)
-                    drawable.setBounds(0, 0, canvas.width, canvas.height)
-                    drawable.draw(canvas)
-
-                    Image(
-                        bitmap = bitmap.asImageBitmap(),
-                        modifier = Modifier.requiredSize(96.dp).clip(CircleShape),
-                        contentDescription = null
-                    )
-                }
+                Image(
+                    painter = rememberAsyncImagePainter(
+                        model = ImageRequest
+                            .Builder(activity)
+                            .data(data = R.mipmap.ic_launcher)
+                            .apply(
+                                block = fun ImageRequest.Builder.() {
+                                    crossfade(true)
+                                }
+                            )
+                            .build(),
+                        imageLoader = imageLoader
+                    ),
+                    modifier = Modifier.requiredSize(96.dp).clip(CircleShape),
+                    contentDescription = null
+                )
                 Spacer(Modifier.height(16.dp))
                 Text(activity.getString(R.string.app_name), style = MaterialTheme.typography.titleLarge)
                 Text("v${BuildConfig.VERSION_NAME}", style = MaterialTheme.typography.bodyMedium)
@@ -138,14 +162,8 @@ fun Main(activity: AboutActivity) {
                 modifier = Modifier.padding(horizontal = 16.dp),
                 lineHeight = 24.sp,
                 text = buildAnnotatedString {
-                    append("都怀念自己的老婆（喜欢Lamp，还有点兔全家桶但都没集全😭）。\n虽然官方留个骨灰盒，但局限性还是有点大，就试想一步步自己搭建私服来复活琪拉拉昔日的光辉。")
-                    addStyle(
-                        style = SpanStyle(
-                            textDecoration = TextDecoration.LineThrough
-                        ),
-                        start = 0,
-                        end = 32
-                    )
+                    append("相信过来用这个App的都怀念自己的老婆（点兔全家桶但都没集全😭）。很可惜，官方于2023年2月28日15点59分关服。\n")
+                    append("虽然官方留个骨灰盒，但局限性还是有点大，就试想一步步自己搭建私服来复活琪拉拉昔日的光辉。")
                 }
             )
             Text(

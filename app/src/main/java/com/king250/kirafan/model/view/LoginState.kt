@@ -1,6 +1,7 @@
 package com.king250.kirafan.model.view
 
 import android.app.Application
+import android.util.Log
 import android.widget.Toast
 import androidx.lifecycle.AndroidViewModel
 import androidx.lifecycle.viewModelScope
@@ -38,7 +39,7 @@ class LoginState(application: Application) : AndroidViewModel(application) {
 
     private val _activate = MutableStateFlow(false)
 
-    private val _token = MutableSharedFlow<String>()
+    private val _session = MutableSharedFlow<String>()
 
     val code: StateFlow<String> = _code
 
@@ -48,7 +49,7 @@ class LoginState(application: Application) : AndroidViewModel(application) {
 
     val activate: StateFlow<Boolean> = _activate
 
-    val token: SharedFlow<String> = _token
+    val session: SharedFlow<String> = _session
 
     private val json = JsonObject().apply {
         addProperty("device_id", Utils.getDID(application.contentResolver))
@@ -81,7 +82,7 @@ class LoginState(application: Application) : AndroidViewModel(application) {
                     }
                     "login" -> {
                         viewModelScope.launch {
-                            _token.emit(data)
+                            _session.emit(data)
                         }
                         stop()
                     }

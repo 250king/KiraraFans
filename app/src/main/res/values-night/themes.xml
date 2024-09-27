@@ -2,7 +2,7 @@
 <resources>
     <style name="Theme.KiraraFans" parent="android:Theme.Material.Light.NoActionBar"/>
     <style name="Theme.LaunchTheme" parent="Theme.SplashScreen">
-        <item name="android:windowBackground">@drawable/android_splash</item>
-        <item name="android:statusBarColor">@color/white</item>
+        <item name="android:windowBackground">@drawable/android_splash_night</item>
+        <item name="android:statusBarColor">@color/black</item>
     </style>
 </resources>

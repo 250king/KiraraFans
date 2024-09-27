@@ -23,21 +23,8 @@ import okhttp3.Request
 import java.io.File
 import java.io.FileOutputStream
 
-
 @SuppressLint("UnspecifiedRegisterReceiverFlag")
 class MainState(application: Application) : AndroidViewModel(application) {
-    private val _user = MutableStateFlow<UserItem?>(null)
-
-    private val _version = MutableStateFlow<String?>(null)
-
-    private val _isDisableLogin = MutableStateFlow(true)
-
-    private val _isDisableDownload = MutableStateFlow(false)
-
-    private val _isConnect = MutableStateFlow(false)
-
-    private val _upgrade = MutableSharedFlow<String>()
-
     private val handler = object : BroadcastReceiver() {
         override fun onReceive(p0: Context?, p1: Intent?) {
             val context = getApplication<Application>().applicationContext
@@ -54,6 +41,18 @@ class MainState(application: Application) : AndroidViewModel(application) {
             }
         }
     }
+
+    private val _user = MutableStateFlow<UserItem?>(null)
+
+    private val _version = MutableStateFlow<String?>(null)
+
+    private val _isDisableLogin = MutableStateFlow(true)
+
+    private val _isDisableDownload = MutableStateFlow(false)
+
+    private val _isConnect = MutableStateFlow(false)
+
+    private val _upgrade = MutableSharedFlow<String>()
 
     val user: StateFlow<UserItem?> = _user
 
@@ -96,6 +95,34 @@ class MainState(application: Application) : AndroidViewModel(application) {
         else {
             getApplication<Application>().registerReceiver(handler, filter)
         }
+    }
+
+    suspend fun fetch(token: String) {
+        try {
+            withContext(Dispatchers.IO) {
+                val request = Request
+                    .Builder()
+                    .url("${Env.QLOGIN_API}/me")
+                    .header("Authorization", "Bearer $token")
+                    .build()
+                val response = Utils.httpClient.newCall(request).execute()
+                if (response.code == 200) {
+                    val result = JsonParser.parseString(response.body?.string()).asJsonObject
+                    response.close()
+                    _user.value = UserItem(
+                        result.get("name").asString,
+                        result.get("avatar").asString
+                    )
+                }
+            }
+        }
+        catch (e: Exception) {
+            e.printStackTrace()
+        }
+        _isDisableLogin.value = false
+    }
+
+    suspend fun check() {
         try {
             withContext(Dispatchers.IO) {
                 val request = Request
@@ -120,33 +147,6 @@ class MainState(application: Application) : AndroidViewModel(application) {
             val context = getApplication<Application>().applicationContext
             Toast.makeText(context, "网络好像不太好~", Toast.LENGTH_LONG).show()
         }
-    }
-
-    suspend fun fetch(token: String) {
-        try {
-            withContext(Dispatchers.IO) {
-                val request = Request
-                    .Builder()
-                    .url("${Env.QLOGIN_API}/me")
-                    .header("Authorization", "Bearer $token")
-                    .build()
-                val response = Utils.httpClient.newCall(request).execute()
-                if (response.code == 200) {
-                    val result = JsonParser.parseString(response.body?.string()).asJsonObject
-                    response.close()
-                    _user.value = UserItem(
-                        result.get("name").asString,
-                        result.get("avatar").asString
-                    )
-                }
-            }
-        }
-        catch (e: Exception) {
-            e.printStackTrace()
-            val context = getApplication<Application>().applicationContext
-            Toast.makeText(context, "网络好像不太好~", Toast.LENGTH_LONG).show()
-        }
-        _isDisableLogin.value = false
     }
 
     fun login(user: UserItem?) {

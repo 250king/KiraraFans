@@ -17,8 +17,8 @@ android {
         applicationId = "com.king250.kirafan"
         minSdk = 24
         targetSdk = 35
-        versionCode = 40101
-        versionName = "4.1.1"
+        versionCode = 40200
+        versionName = "4.2.0"
         testInstrumentationRunner = "androidx.test.runner.AndroidJUnitRunner"
         vectorDrawables {
             useSupportLibrary = true
@@ -112,6 +112,7 @@ dependencies {
     implementation("androidx.activity:activity-compose:1.9.2")
     implementation("androidx.browser:browser:1.8.0")
     implementation("androidx.core:core-ktx:1.13.1")
+    implementation("androidx.core:core-splashscreen:1.0.1")
     implementation("androidx.compose.ui:ui")
     implementation("androidx.compose.ui:ui-graphics")
     implementation("androidx.compose.ui:ui-tooling-preview")
@@ -124,6 +125,7 @@ dependencies {
     implementation("com.squareup.okhttp3:okhttp:4.12.0")
     implementation("com.squareup.okhttp3:okhttp-sse:4.12.0")
     implementation("io.coil-kt:coil-compose:2.6.0")
+    implementation("io.coil-kt:coil-gif:2.6.0")
     implementation("androidx.test:runner:1.6.2")
     implementation("androidx.test.espresso:espresso-core:3.6.1")
     testImplementation("junit:junit:4.13.2")
