@@ -1,7 +1,7 @@
 package com.king250.kirafan
 
 object Env {
-    const val QLOGIN_API = "https://qlogin-server-iadubfrvfb.cn-shenzhen.fcapp.run"
+    const val QLOGIN_API = "https://qlogin-server-npxvzfodeb.cn-shenzhen.fcapp.run"
 
     const val KIRARA_API = "https://vpc.sparklefantasia.com/proxy/api"
 

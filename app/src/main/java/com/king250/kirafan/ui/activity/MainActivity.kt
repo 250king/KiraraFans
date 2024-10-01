@@ -234,7 +234,7 @@ fun Main(activity: MainActivity) {
                 icon = {
                     Icon(
                         modifier = Modifier.size(24.dp),
-                        painter = painterResource(R.drawable.phone_android_24px),
+                        painter = painterResource(R.drawable.phone),
                         contentDescription = null
                     )
                 },
@@ -293,7 +293,7 @@ fun Main(activity: MainActivity) {
                 icon = {
                     Icon(
                         modifier = Modifier.size(24.dp),
-                        painter = painterResource(R.drawable.stadia_controller_24px),
+                        painter = painterResource(R.drawable.controller),
                         contentDescription = null
                     )
                 },
@@ -336,7 +336,7 @@ fun Main(activity: MainActivity) {
                 icon = {
                     Icon(
                         modifier = Modifier.size(24.dp),
-                        painter = painterResource(R.drawable.cable_24px),
+                        painter = painterResource(R.drawable.cable),
                         contentDescription = null
                     )
                 },
