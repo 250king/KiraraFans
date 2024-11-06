@@ -2,8 +2,8 @@
 <layer-list xmlns:android="http://schemas.android.com/apk/res/android">
     <item android:drawable="@color/black" />
     <item
-        android:width="160dp"
-        android:height="160dp"
+        android:width="192dp"
+        android:height="192dp"
         android:gravity="center">
         <inset
             android:drawable="@drawable/android_splash_icon" />

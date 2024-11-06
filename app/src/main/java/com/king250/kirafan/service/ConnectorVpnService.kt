@@ -1,5 +1,6 @@
 package com.king250.kirafan.service
 
+import android.app.PendingIntent
 import android.app.Service
 import android.content.Intent
 import android.net.LocalSocket
@@ -8,7 +9,10 @@ import android.net.VpnService
 import android.os.Build
 import android.os.ParcelFileDescriptor
 import android.os.StrictMode
+import androidx.core.app.NotificationCompat
+import com.king250.kirafan.Env
 import com.king250.kirafan.R
+import com.king250.kirafan.ui.activity.MainActivity
 import kotlinx.coroutines.CoroutineScope
 import kotlinx.coroutines.Dispatchers
 import kotlinx.coroutines.launch
@@ -39,6 +43,16 @@ class ConnectorVpnService : VpnService(), ServiceControl {
 
     override fun onStartCommand(intent: Intent?, flags: Int, startId: Int): Int {
         ConnectorServiceManager.startV2RayPoint()
+        val mainIntent = Intent(this, MainActivity::class.java)
+        mainIntent.flags = Intent.FLAG_ACTIVITY_SINGLE_TOP or Intent.FLAG_ACTIVITY_CLEAR_TOP
+        val pendingIntent = PendingIntent.getActivity(this, 0, mainIntent, PendingIntent.FLAG_UPDATE_CURRENT or PendingIntent.FLAG_IMMUTABLE)
+        val notification = NotificationCompat.Builder(this, Env.NOTIFICATION_CHANNEL)
+            .setContentTitle("GNet™ VPN Gateway")
+            .setContentText("已连接至主节点")
+            .setSmallIcon(R.drawable.ic_notification)
+            .setContentIntent(pendingIntent)
+            .build()
+        startForeground(1, notification)
         return START_STICKY
     }
 

@@ -22,6 +22,7 @@ import androidx.compose.runtime.Composable
 import androidx.compose.ui.Modifier
 import com.king250.kirafan.model.data.InfoItem
 import com.king250.kirafan.ui.theme.KiraraFansTheme
+import com.king250.kirafan.util.Utils
 
 class InfoActivity : ComponentActivity() {
     override fun onCreate(savedInstanceState: Bundle?) {
@@ -29,7 +30,10 @@ class InfoActivity : ComponentActivity() {
         setContent {
             KiraraFansTheme {
                 // A surface container using the 'background' color from the theme
-                Surface(modifier = Modifier.fillMaxSize(), color = MaterialTheme.colorScheme.background) {
+                Surface(
+                    modifier = Modifier.fillMaxSize(),
+                    color = MaterialTheme.colorScheme.background
+                ) {
                     Main(this)
                 }
             }
@@ -41,7 +45,7 @@ class InfoActivity : ComponentActivity() {
 @SuppressLint("UnusedMaterial3ScaffoldPaddingParameter")
 @OptIn(ExperimentalMaterial3Api::class)
 @Composable
-fun Main(activity: InfoActivity) {
+fun Main(a: InfoActivity) {
     val scrollState = rememberScrollState()
     val items = listOf(
         InfoItem("厂商", Build.MANUFACTURER),
@@ -49,6 +53,14 @@ fun Main(activity: InfoActivity) {
         InfoItem("型号", Build.MODEL),
         InfoItem("基板", Build.BOARD),
         InfoItem("指纹", Build.FINGERPRINT),
+        InfoItem(
+            "USB调试", if (Utils.checkUSB(a.contentResolver)) {
+                "已打开"
+            }
+            else {
+                "未打开"
+            }
+        ),
         InfoItem("Android版本", Build.VERSION.RELEASE),
         InfoItem("Android API级别", Build.VERSION.SDK_INT.toString()),
     )
@@ -62,7 +74,7 @@ fun Main(activity: InfoActivity) {
                 navigationIcon = {
                     IconButton(
                         onClick = {
-                            activity.finish()
+                            a.finish()
                         }
                     ) {
                         Icon(Icons.AutoMirrored.Filled.ArrowBack, contentDescription = null)
@@ -75,9 +87,9 @@ fun Main(activity: InfoActivity) {
             for (item in items) {
                 ListItem(
                     modifier = Modifier.clickable {
-                        val cm = activity.getSystemService(Context.CLIPBOARD_SERVICE) as ClipboardManager
+                        val cm = a.getSystemService(Context.CLIPBOARD_SERVICE) as ClipboardManager
                         cm.setPrimaryClip(ClipData.newPlainText(null, item.value))
-                        Toast.makeText(activity, "已成功复制到剪切板", Toast.LENGTH_SHORT).show()
+                        Toast.makeText(a, "已成功复制到剪切板", Toast.LENGTH_SHORT).show()
                     },
                     headlineContent = {
                         Text(item.name)

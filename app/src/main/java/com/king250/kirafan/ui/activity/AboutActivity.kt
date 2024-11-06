@@ -69,10 +69,10 @@ class AboutActivity : ComponentActivity() {
 @SuppressLint("UnusedMaterial3ScaffoldPaddingParameter")
 @OptIn(ExperimentalMaterial3Api::class)
 @Composable
-fun Main(activity: AboutActivity) {
+fun Main(a: AboutActivity) {
     val scrollState = rememberScrollState()
     val imageLoader = ImageLoader
-        .Builder(activity)
+        .Builder(a)
         .components {
             if (Build.VERSION.SDK_INT >= 28) {
                 add(ImageDecoderDecoder.Factory())
@@ -85,21 +85,21 @@ fun Main(activity: AboutActivity) {
         AboutItem("获得最新版") {
             val intent = CustomTabsIntent.Builder().build()
             val uri = Uri.parse("https://github.com/gd1000m/Kirara-Repo/releases/latest")
-            intent.launchUrl(activity, uri)
+            intent.launchUrl(a, uri)
         },
         AboutItem("一起来玩") {
             val intent = CustomTabsIntent.Builder().build()
             val uri = Uri.parse("https://discord.gg/YmbbxDsbNB")
-            intent.launchUrl(activity, uri)
+            intent.launchUrl(a, uri)
         },
         AboutItem("项目地址") {
             val intent = CustomTabsIntent.Builder().build()
             val uri = Uri.parse("https://gitlab.com/kirafan/sparkle/server")
-            intent.launchUrl(activity, uri)
+            intent.launchUrl(a, uri)
         },
         AboutItem("开源许可证") {
-            val intent = Intent(activity, LicenseActivity::class.java)
-            activity.startActivity(intent)
+            val intent = Intent(a, LicenseActivity::class.java)
+            a.startActivity(intent)
         }
     )
     val developers = listOf(
@@ -118,7 +118,7 @@ fun Main(activity: AboutActivity) {
                 navigationIcon = {
                     IconButton(
                         onClick = {
-                            activity.finish()
+                            a.finish()
                         }
                     ) {
                         Icon(Icons.AutoMirrored.Filled.ArrowBack, contentDescription = null)
@@ -135,8 +135,8 @@ fun Main(activity: AboutActivity) {
                 Image(
                     painter = rememberAsyncImagePainter(
                         model = ImageRequest
-                            .Builder(activity)
-                            .data(data = R.mipmap.ic_launcher)
+                            .Builder(a)
+                            .data(data = R.drawable.ic_launcher_round)
                             .apply(
                                 block = fun ImageRequest.Builder.() {
                                     crossfade(true)
@@ -149,7 +149,7 @@ fun Main(activity: AboutActivity) {
                     contentDescription = null
                 )
                 Spacer(Modifier.height(16.dp))
-                Text(activity.getString(R.string.app_name), style = MaterialTheme.typography.titleLarge)
+                Text(a.getString(R.string.app_name), style = MaterialTheme.typography.titleLarge)
                 Text("v${BuildConfig.VERSION_NAME}", style = MaterialTheme.typography.bodyMedium)
             }
             Text(
@@ -176,7 +176,7 @@ fun Main(activity: AboutActivity) {
                 ListItem(
                     modifier = Modifier.clickable {
                         val intent = CustomTabsIntent.Builder().build()
-                        intent.launchUrl(activity, Uri.parse(item.url))
+                        intent.launchUrl(a, Uri.parse(item.url))
                     },
                     headlineContent = {
                         Text(item.name)

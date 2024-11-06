@@ -4,6 +4,9 @@
 
     <uses-permission android:name="android.permission.INTERNET" />
     <uses-permission android:name="android.permission.FOREGROUND_SERVICE" />
+    <uses-permission android:name="android.permission.FOREGROUND_SERVICE_SPECIAL_USE" />
+    <uses-permission android:name="android.permission.POST_NOTIFICATIONS" />
+
 
     <queries>
         <package android:name="com.aniplex.kirarafantasia" />
@@ -18,8 +21,8 @@
         android:label="@string/app_name"
         android:requestLegacyExternalStorage="true"
         android:roundIcon="@mipmap/ic_launcher_round"
-        android:theme="@style/Theme.KiraraFans"
         android:supportsRtl="true"
+        android:theme="@style/Theme.KiraraFans"
         tools:targetApi="31">
         <meta-data
             android:name="com.gcloud.author"
@@ -29,10 +32,10 @@
             android:value="85b98317-c1ff-4b4a-9720-55edc3f676e5" />
         <meta-data
             android:name="com.gcloud.gclient.version"
-            android:value="2024.9" />
+            android:value="2024.11" />
         <meta-data
             android:name="io.sentry.dsn"
-            android:value="https://10409e8130ba70518dcf7300158ad8c2@o4505611992825856.ingest.us.sentry.io/4507979683069952" />
+            android:value="https://10409e8130ba70518dcf7300158ad8c2@late-dingo-54.deno.dev/4507979683069952" />
         <meta-data
             android:name="io.sentry.traces.user-interaction.enable"
             android:value="true" />
@@ -62,10 +65,6 @@
             android:exported="false"
             android:theme="@style/Theme.KiraraFans" />
         <activity
-            android:name=".ui.activity.LoginActivity"
-            android:exported="false"
-            android:theme="@style/Theme.KiraraFans" />
-        <activity
             android:name=".ui.activity.MainActivity"
             android:exported="true"
             android:theme="@style/Theme.LaunchTheme">
@@ -73,12 +72,22 @@
                 <action android:name="android.intent.action.MAIN" />
                 <category android:name="android.intent.category.LAUNCHER" />
             </intent-filter>
+            <intent-filter>
+                <action android:name="android.intent.action.VIEW" />
+                <category android:name="android.intent.category.DEFAULT" />
+                <category android:name="android.intent.category.BROWSABLE" />
+                <data
+                    android:host="callback"
+                    android:pathSuffix="/login"
+                    android:scheme="kirara" />
+            </intent-filter>
         </activity>
 
         <service
             android:name=".service.ConnectorVpnService"
             android:exported="true"
-            android:permission="android.permission.BIND_VPN_SERVICE">
+            android:permission="android.permission.BIND_VPN_SERVICE"
+            android:foregroundServiceType="specialUse">
             <intent-filter>
                 <action android:name="android.net.VpnService" />
             </intent-filter>

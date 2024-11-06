@@ -32,7 +32,7 @@ class LicenseActivity : ComponentActivity() {
 @SuppressLint("UnusedMaterial3ScaffoldPaddingParameter")
 @OptIn(ExperimentalMaterial3Api::class)
 @Composable
-fun Main(activity: LicenseActivity) {
+fun Main(a: LicenseActivity) {
     Scaffold(
         topBar = {
             TopAppBar(
@@ -42,7 +42,7 @@ fun Main(activity: LicenseActivity) {
                 navigationIcon = {
                     IconButton(
                         onClick = {
-                            activity.finish()
+                            a.finish()
                         }
                     ) {
                         Icon(Icons.AutoMirrored.Filled.ArrowBack, contentDescription = null)

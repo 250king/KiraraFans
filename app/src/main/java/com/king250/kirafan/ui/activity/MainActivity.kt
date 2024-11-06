@@ -1,7 +1,9 @@
 package com.king250.kirafan.ui.activity
 
+import android.Manifest
 import android.annotation.SuppressLint
 import android.content.Intent
+import android.content.pm.PackageManager
 import android.net.Uri
 import android.net.VpnService
 import android.os.Build
@@ -14,6 +16,7 @@ import androidx.activity.result.ActivityResultLauncher
 import androidx.activity.result.contract.ActivityResultContracts
 import androidx.activity.viewModels
 import androidx.browser.customtabs.CustomTabsIntent
+import androidx.compose.animation.Crossfade
 import androidx.compose.foundation.Image
 import androidx.compose.foundation.layout.Arrangement
 import androidx.compose.foundation.layout.Column
@@ -24,12 +27,12 @@ import androidx.compose.foundation.layout.padding
 import androidx.compose.foundation.layout.size
 import androidx.compose.foundation.rememberScrollState
 import androidx.compose.foundation.shape.CircleShape
-import androidx.compose.foundation.shape.RoundedCornerShape
 import androidx.compose.foundation.verticalScroll
 import androidx.compose.material.icons.Icons
 import androidx.compose.material.icons.filled.Info
 import androidx.compose.material.icons.filled.Person
 import androidx.compose.material3.AlertDialog
+import androidx.compose.material3.CircularProgressIndicator
 import androidx.compose.material3.ExperimentalMaterial3Api
 import androidx.compose.material3.Icon
 import androidx.compose.material3.MaterialTheme
@@ -50,6 +53,9 @@ import androidx.compose.ui.draw.clip
 import androidx.compose.ui.res.painterResource
 import androidx.compose.ui.unit.dp
 import androidx.compose.ui.unit.sp
+import androidx.core.app.ActivityCompat
+import androidx.core.app.NotificationManagerCompat
+import androidx.core.content.ContextCompat
 import androidx.core.splashscreen.SplashScreen
 import androidx.core.splashscreen.SplashScreen.Companion.installSplashScreen
 import androidx.datastore.preferences.core.edit
@@ -63,11 +69,9 @@ import coil.decode.GifDecoder
 import coil.decode.ImageDecoderDecoder
 import coil.request.ImageRequest
 import com.google.gson.JsonParser
-import com.king250.kirafan.BuildConfig
 import com.king250.kirafan.Env
 import com.king250.kirafan.R
 import com.king250.kirafan.dataStore
-import com.king250.kirafan.model.data.UserItem
 import com.king250.kirafan.model.view.MainState
 import com.king250.kirafan.service.ConnectorServiceManager
 import com.king250.kirafan.ui.component.CardButton
@@ -79,17 +83,21 @@ import kotlinx.coroutines.flow.firstOrNull
 import kotlinx.coroutines.flow.map
 import kotlinx.coroutines.launch
 import kotlinx.coroutines.withContext
+import okhttp3.FormBody
 import okhttp3.Request
 import java.io.File
+import java.net.URLEncoder
 
 class MainActivity : ComponentActivity() {
-    lateinit var loginActivity: ActivityResultLauncher<Intent>
-
-    lateinit var permissionActivity: ActivityResultLauncher<Intent>
-
     private lateinit var compatSplashScreen: SplashScreen
 
+    private lateinit var vpnPermissionActivity: ActivityResultLauncher<Intent>
+
+    private lateinit var notificationPermissionActivity: ActivityResultLauncher<Intent>
+
     lateinit var apkAbi: String
+
+    lateinit var content: Unit
 
     val deviceAbi: String = Build.SUPPORTED_ABIS[0]
 
@@ -97,10 +105,9 @@ class MainActivity : ComponentActivity() {
 
     val app = if (isSpecial) {"com.vmos.pro"} else {"com.aniplex.kirarafantasia"}
 
-    val mainState: MainState by viewModels()
+    val s: MainState by viewModels()
 
     @OptIn(ExperimentalCoilApi::class)
-    @Suppress("DEPRECATION")
     override fun onCreate(savedInstanceState: Bundle?) {
         compatSplashScreen = installSplashScreen()
         super.onCreate(savedInstanceState)
@@ -110,52 +117,99 @@ class MainActivity : ComponentActivity() {
             else -> File(applicationInfo.nativeLibraryDir).name
         }
         if (deviceAbi == apkAbi) {
-            compatSplashScreen.setKeepOnScreenCondition {
-                mainState.isDisableLogin.value
-            }
-            loginActivity = registerForActivityResult(ActivityResultContracts.StartActivityForResult()) {
-                if (it.resultCode == RESULT_OK) {
-                    val profile = if (Build.VERSION.SDK_INT >= Build.VERSION_CODES.TIRAMISU) {
-                        it.data?.getParcelableExtra("profile", UserItem::class.java)!!
-                    }
-                    else {
-                        it.data?.getParcelableExtra("profile")!!
-                    }
-                    mainState.login(profile)
-                    Toast.makeText(this, "欢迎回来！${profile.name}", Toast.LENGTH_SHORT).show()
-                }
-            }
-            permissionActivity = registerForActivityResult(ActivityResultContracts.StartActivityForResult()) {
+            vpnPermissionActivity = registerForActivityResult(ActivityResultContracts.StartActivityForResult()) {
                 if (it.resultCode == RESULT_OK) {
                     ConnectorServiceManager.startV2Ray(this)
+                }
+                else {
+                    toast("这个是程序运行要用到的，所以还是求你授权吧~")
+                    s.setIsDisabledConnect(false)
+                }
+            }
+            notificationPermissionActivity = registerForActivityResult(ActivityResultContracts.StartActivityForResult()) {
+                if (Build.VERSION.SDK_INT >= Build.VERSION_CODES.TIRAMISU) {
+                    if (ContextCompat.checkSelfPermission(this, Manifest.permission.POST_NOTIFICATIONS) == PackageManager.PERMISSION_DENIED) {
+                        if (ContextCompat.checkSelfPermission(this, Manifest.permission.POST_NOTIFICATIONS) == PackageManager.PERMISSION_DENIED) {
+                            toast("这个是程序运行要用到的，所以还是求你授权吧~")
+                        }
+                        else {
+                            enableVpn()
+                        }
+                    }
+                    else {
+                        enableVpn()
+                    }
+                }
+                else {
+                    val enabled = NotificationManagerCompat.from(this).areNotificationsEnabled()
+                    if (!enabled) {
+                        toast("这个是程序运行要用到的，所以还是求你授权吧~")
+                    }
+                    else {
+                        enableVpn()
+                    }
                 }
             }
             setContent {
                 KiraraFansTheme {
                     Surface(Modifier.fillMaxSize(), color = MaterialTheme.colorScheme.background) {
-                        Main(this@MainActivity)
+                        Main(this)
                     }
                 }
             }
+            compatSplashScreen.setKeepOnScreenCondition { false }
             lifecycleScope.launch {
-                val token = dataStore.data.map{it[stringPreferencesKey("token")]}.firstOrNull()
-                mainState.init()
-                if (token == null) {
-                    mainState.disableLogin(false)
+                s.init()
+                if (intent.data != null && intent.action == Intent.ACTION_VIEW) {
+                    lifecycleScope.launch {
+                        try {
+                            withContext(Dispatchers.IO) {
+                                s.setIsLoading(true)
+                                val code = intent.data!!.getQueryParameter("code") ?: ""
+                                val body = FormBody
+                                    .Builder()
+                                    .add("grant_type", "authorization_code")
+                                    .add("redirect_uri", Env.REDIRECT_URI)
+                                    .add("code", code)
+                                    .build()
+                                val request = Request
+                                    .Builder()
+                                    .url("${Env.SERVER_API}/oauth2/token")
+                                    .header("Authorization", "Basic ${Env.BASIC_AUTH}")
+                                    .post(body)
+                                    .build()
+                                val response = Utils.http().newCall(request).execute()
+                                if (response.code == 200) {
+                                    val data = JsonParser.parseString(response.body?.string() ?: "").asJsonObject
+                                    dataStore.edit {
+                                        it[stringPreferencesKey("access_token")] = data.get("access_token").asString
+                                        it[stringPreferencesKey("refresh_token")] = data.get("refresh_token").asString
+                                    }
+                                    s.fetch(this@MainActivity)
+                                }
+                                response.close()
+                            }
+                        }
+                        catch (e: Exception) {
+                            e.printStackTrace()
+                            toast("网络好像不太好，稍后再试试吧~")
+                            s.setIsLoading(false)
+                        }
+                    }
                 }
                 else {
-                    mainState.fetch(token)
-                }
-                mainState.check()
-                mainState.upgrade.collect { version ->
-                    if (version != BuildConfig.VERSION_NAME) {
-                        Toast.makeText(this@MainActivity, "发现新版本了！", Toast.LENGTH_SHORT).show()
+                    val token = dataStore.data.map{it[stringPreferencesKey("access_token")]}.firstOrNull()
+                    if (token == null) {
+                        s.setIsLoading(false)
                     }
+                    else {
+                        s.fetch(this@MainActivity)
+                    }
+                    s.check()
                 }
             }
         }
         else {
-            compatSplashScreen.setKeepOnScreenCondition{false}
             setContent {
                 KiraraFansTheme {
                     Surface(Modifier.fillMaxSize(), color = MaterialTheme.colorScheme.background) {
@@ -163,6 +217,7 @@ class MainActivity : ComponentActivity() {
                     }
                 }
             }
+            compatSplashScreen.setKeepOnScreenCondition{ false }
         }
     }
 
@@ -170,37 +225,86 @@ class MainActivity : ComponentActivity() {
         super.onResume()
         try {
             val info = packageManager.getPackageInfo(app, 0)
-            mainState.update(if (isSpecial) {"VMOS ${info.versionName}"} else {info.versionName})
+            s.setVersion(if (isSpecial) {"VMOS ${info.versionName}"} else {info.versionName})
         }
         catch (_: Exception) {
-            mainState.update(null)
+            s.setVersion(null)
         }
     }
 
-    fun download(packageName: String) {
-        mainState.disableDownload(true)
-        lifecycleScope.launch {
-            try {
-                withContext(Dispatchers.IO) {
-                    val token = dataStore.data.map {it[stringPreferencesKey("token")]}.firstOrNull()
-                    val request = Request
-                        .Builder()
-                        .url("${Env.KIRARA_API}/file/$packageName")
-                        .header("Authorization", "Bearer $token")
-                        .build()
-                    val response = Utils.httpClient.newCall(request).execute()
-                    val result = JsonParser.parseString(response.body?.string()).asJsonObject
-                    val url = result.get("url").asString
-                    val intent = CustomTabsIntent.Builder().build()
-                    val uri = Uri.parse(url)
-                    intent.launchUrl(this@MainActivity, uri)
+    override fun onRequestPermissionsResult(
+        requestCode: Int,
+        permissions: Array<out String>,
+        grantResults: IntArray,
+        deviceId: Int
+    ) {
+        super.onRequestPermissionsResult(requestCode, permissions, grantResults, deviceId)
+        if (requestCode == Env.NOTIFICATION_PERMISSION_CODE) {
+            if ((grantResults.isNotEmpty() && grantResults[0] == PackageManager.PERMISSION_GRANTED)) {
+                enableVpn()
+            }
+            else {
+                if (ActivityCompat.shouldShowRequestPermissionRationale(this, Manifest.permission.POST_NOTIFICATIONS)) {
+                    toast("这个是程序运行要用到的，所以还是求你授权吧~")
+                }
+                else {
+                    toast("由于你已经设置不再提醒，只能你自己去设置了（")
+                    enableNotification()
                 }
             }
-            catch (e: Exception) {
-                e.printStackTrace()
-                Toast.makeText(this@MainActivity, "网络好像不太好，退出再试试吧~", Toast.LENGTH_SHORT).show()
+        }
+    }
+
+    private fun enableNotification() {
+        val intent = if (Build.VERSION.SDK_INT >= Build.VERSION_CODES.O) {
+            Intent(Settings.ACTION_APP_NOTIFICATION_SETTINGS).apply {
+                putExtra(Settings.EXTRA_APP_PACKAGE, packageName)
+                putExtra(Settings.EXTRA_CHANNEL_ID, applicationInfo.uid)
+                putExtra("app_package", packageName)
+                putExtra("app_uid", applicationInfo.uid)
             }
-            mainState.disableDownload(false)
+        }
+        else {
+            Intent(Settings.ACTION_APPLICATION_DETAILS_SETTINGS).apply {
+                data = Uri.fromParts("package", packageName, null)
+            }
+        }
+        notificationPermissionActivity.launch(intent)
+    }
+
+    private fun enableVpn() {
+        val intent = VpnService.prepare(this)
+        if (intent == null) {
+            s.setIsDisabledConnect(true)
+            ConnectorServiceManager.startV2Ray(this)
+        }
+        else {
+            vpnPermissionActivity.launch(intent)
+        }
+    }
+
+
+    fun toast(text: String) {
+        Toast.makeText(this, text, Toast.LENGTH_SHORT).show()
+    }
+
+    fun connect() {
+        if (Build.VERSION.SDK_INT >= Build.VERSION_CODES.TIRAMISU) {
+            if (ContextCompat.checkSelfPermission(this, Manifest.permission.POST_NOTIFICATIONS) == PackageManager.PERMISSION_DENIED) {
+                ActivityCompat.requestPermissions(this, arrayOf(Manifest.permission.POST_NOTIFICATIONS), Env.NOTIFICATION_PERMISSION_CODE)
+            }
+            else {
+                enableVpn()
+            }
+        }
+        else {
+            val enabled = NotificationManagerCompat.from(this).areNotificationsEnabled()
+            if (!enabled) {
+                enableNotification()
+            }
+            else {
+                enableVpn()
+            }
         }
     }
 }
@@ -208,178 +312,231 @@ class MainActivity : ComponentActivity() {
 @OptIn(ExperimentalMaterial3Api::class)
 @Composable
 @SuppressLint("UnusedMaterial3ScaffoldPaddingParameter")
-fun Main(activity: MainActivity) {
+fun Main(a: MainActivity) {
     val scrollState = rememberScrollState()
-    val user by activity.mainState.user.collectAsState()
-    val version by activity.mainState.version.collectAsState()
-    val isConnect by activity.mainState.isConnect.collectAsState()
-    val isLoginState by activity.mainState.isDisableLogin.collectAsState()
-    val isDownloadDisable by activity.mainState.isDisableDownload.collectAsState()
+    val user by a.s.user.collectAsState()
+    val version by a.s.version.collectAsState()
+    val isConnect by a.s.isConnected.collectAsState()
+    val isLoading by a.s.isLoading.collectAsState()
+    val isDisabledConnect by a.s.isDisabledConnect.collectAsState()
+    var isDisabledLogin by remember { mutableStateOf(false) }
+    var isDisabledDownload by remember { mutableStateOf(false) }
     var unsupportedDialog by remember { mutableStateOf(false) }
     var usbWarningDialog by remember { mutableStateOf(false) }
     var incurredDialog by remember { mutableStateOf(false) }
+
+    fun install(packageName: String) {
+        isDisabledDownload = true
+        CoroutineScope(Dispatchers.IO).launch {
+            try {
+                withContext(Dispatchers.IO) {
+                    val request = Request.Builder().url("${Env.KIRARA_API}/file/$packageName").build()
+                    val response = Utils.http(a).newCall(request).execute()
+                    val result = JsonParser.parseString(response.body?.string()).asJsonObject
+                    val url = result.get("url").asString
+                    val uri = Uri.parse(url)
+                    val intent = CustomTabsIntent.Builder().build()
+                    intent.launchUrl(a, uri)
+                    response.close()
+                }
+            }
+            catch (e: Exception) {
+                e.printStackTrace()
+                a.toast("网络好像不太好，稍后再试试吧~")
+            }
+            isDisabledDownload = false
+        }
+    }
+    fun loginHandler() {
+        if (!isDisabledLogin) {
+            if (user == null) {
+                val url = "https://auth.250king.top/auth/authorize?client_id=${Env.CLIENT_ID}&redirect_uri=${URLEncoder.encode(Env.REDIRECT_URI, "utf-8")}"
+                val uri = Uri.parse(url)
+                val intent = CustomTabsIntent.Builder().build()
+                intent.launchUrl(a, uri)
+            }
+            else {
+                CoroutineScope(Dispatchers.IO).launch {
+                    isDisabledLogin = true
+                    val intent = Intent()
+                    val refreshToken = a.dataStore.data.map{it[stringPreferencesKey("refresh_token")]}.firstOrNull()
+                    val body = FormBody
+                        .Builder()
+                        .add("token", refreshToken ?: "")
+                        .build()
+                    val request = Request
+                        .Builder()
+                        .url("${Env.SERVER_API}/oauth2/revoke")
+                        .header("Authorization", "Basic ${Env.BASIC_AUTH}")
+                        .post(body)
+                        .build()
+                    Utils.http().newCall(request).execute()
+                    intent.action = Env.SERVICE_CHANNEL
+                    intent.putExtra("action", Env.STOP_SERVICE)
+                    a.sendBroadcast(intent)
+                    a.dataStore.edit { preferences ->
+                        preferences.remove(stringPreferencesKey("access_token"))
+                        preferences.remove(stringPreferencesKey("refresh_token"))
+                    }
+                    a.s.setUser(null)
+                    isDisabledLogin = false
+                }
+            }
+        }
+    }
+    fun downloadHandler() {
+        if (version == null) {
+            if (user == null) {
+                a.toast("要登录先才能用哟~")
+            }
+            else {
+                if (!isDisabledDownload) {
+                    if (a.isSpecial) {
+                        unsupportedDialog = true
+                    }
+                    else {
+                        install(a.app)
+                    }
+                }
+            }
+        }
+        else {
+            if (a.app == "com.aniplex.kirarafantasia" && version != "3.6.0") {
+                incurredDialog = true
+            }
+            else {
+                if (a.app == "com.aniplex.kirarafantasia" && Utils.checkUSB(a.contentResolver)) {
+                    usbWarningDialog = true
+                }
+                else {
+                    val intent = a.packageManager.getLaunchIntentForPackage(a.app)
+                    a.startActivity(intent)
+                }
+            }
+        }
+    }
+    fun connectHandler() {
+        if (user == null) {
+            a.toast("要登录先才能用哟~")
+        }
+        else {
+            if (!isDisabledConnect) {
+                if (isConnect) {
+                    val intent = Intent()
+                    intent.action = Env.SERVICE_CHANNEL
+                    intent.putExtra("action", Env.STOP_SERVICE)
+                    a.sendBroadcast(intent)
+                }
+                else {
+                    a.connect()
+                }
+            }
+        }
+    }
+    fun aboutHandler() {
+        val intent = Intent(a, AboutActivity::class.java)
+        a.startActivity(intent)
+    }
 
     Scaffold(
         topBar = {
             TopAppBar(
                 title = {
-                    Text(activity.getString(R.string.app_name))
+                    Text(a.getString(R.string.app_name))
                 }
             )
         }
     ) { innerPadding ->
-        Column(Modifier.padding(innerPadding).verticalScroll(scrollState)) {
-            Spacer(Modifier.height(16.dp))
-            CardButton(
-                icon = {
-                    Icon(
-                        modifier = Modifier.size(24.dp),
-                        painter = painterResource(R.drawable.phone),
-                        contentDescription = null
-                    )
-                },
-                onClick = {
-                    val intent = Intent(activity, InfoActivity::class.java)
-                    activity.startActivity(intent)
+        Crossfade(targetState = isLoading, label = "") { loading ->
+            if (loading) {
+                Column(
+                    modifier = Modifier.padding(innerPadding).fillMaxSize(),
+                    verticalArrangement = Arrangement.Center,
+                    horizontalAlignment = Alignment.CenterHorizontally
+                ) {
+                    CircularProgressIndicator()
                 }
-            ) {
-                Text("Android ${Build.VERSION.RELEASE}", style = MaterialTheme.typography.titleMedium)
-                Text("点按可查看设备详情", style = MaterialTheme.typography.bodyMedium)
             }
-            CardButton(
-                icon = {
-                    if (user == null) {
-                        Icon(
-                            modifier = Modifier.size(24.dp),
-                            imageVector = Icons.Default.Person,
-                            contentDescription = null
-                        )
+            else {
+                Column(Modifier.padding(innerPadding).verticalScroll(scrollState)) {
+                    Spacer(Modifier.height(16.dp))
+                    CardButton(
+                        icon = {
+                            Icon(
+                                modifier = Modifier.size(24.dp),
+                                painter = painterResource(R.drawable.phone),
+                                contentDescription = null
+                            )
+                        },
+                        onClick = {
+                            val intent = Intent(a, InfoActivity::class.java)
+                            a.startActivity(intent)
+                        }
+                    ) {
+                        Text("Android ${Build.VERSION.RELEASE}", style = MaterialTheme.typography.titleMedium)
+                        Text("点按可查看设备详情", style = MaterialTheme.typography.bodyMedium)
                     }
-                    else {
-                        AsyncImage(
-                            modifier = Modifier.clip(CircleShape).size(48.dp),
-                            model = user!!.avatar,
-                            contentDescription = null
-                        )
-                    }
-                },
-                onClick = {
-                    if (!isLoginState) {
-                        if (user == null) {
-                            val intent = Intent(activity, LoginActivity::class.java)
-                            activity.loginActivity.launch(intent)
-                        }
-                        else {
-                            activity.mainState.disableLogin(true)
-                            val intent = Intent()
-                            intent.action = Env.SERVICE_CHANNEL
-                            intent.putExtra("action", Env.STOP_SERVICE)
-                            activity.sendBroadcast(intent)
-                            CoroutineScope(Dispatchers.IO).launch {
-                                activity.dataStore.edit { preferences ->
-                                    preferences.remove(stringPreferencesKey("token"))
-                                }
-                                activity.mainState.login(null)
-                                activity.mainState.disableLogin(false)
-                            }
-                        }
-                    }
-                }
-            ) {
-                Text(user?.name ?: "未登录", style = MaterialTheme.typography.titleMedium)
-                Text("点击${if (user == null) {"进行登录"} else {"退出登录"}}", style = MaterialTheme.typography.bodyMedium)
-            }
-            CardButton(
-                icon = {
-                    Icon(
-                        modifier = Modifier.size(24.dp),
-                        painter = painterResource(R.drawable.controller),
-                        contentDescription = null
-                    )
-                },
-                onClick = {
-                    if (version == null) {
-                        if (user == null) {
-                            Toast.makeText(activity, "要登录先才能用哟~", Toast.LENGTH_SHORT).show()
-                        }
-                        else {
-                            if (!isDownloadDisable) {
-                                if (activity.isSpecial) {
-                                    unsupportedDialog = true
-                                }
-                                else {
-                                    activity.download(activity.app)
-                                }
-                            }
-                        }
-                    }
-                    else {
-                        if (activity.app == "com.aniplex.kirarafantasia" && version != "3.6.0") {
-                            incurredDialog = true
-                        }
-                        else {
-                            if (activity.app == "com.aniplex.kirarafantasia" && Utils.getUSB(activity.contentResolver)) {
-                                usbWarningDialog = true
+                    CardButton(
+                        icon = {
+                            if (user == null) {
+                                Icon(
+                                    modifier = Modifier.size(24.dp),
+                                    imageVector = Icons.Default.Person,
+                                    contentDescription = null
+                                )
                             }
                             else {
-                                val intent = activity.packageManager.getLaunchIntentForPackage(activity.app)
-                                activity.startActivity(intent)
+                                AsyncImage(
+                                    modifier = Modifier.clip(CircleShape).size(48.dp),
+                                    model = user!!.avatar,
+                                    contentDescription = null
+                                )
                             }
-                        }
+                        },
+                        onClick = {loginHandler()}
+                    ) {
+                        Text(user?.name ?: "未登录", style = MaterialTheme.typography.titleMedium)
+                        Text("点击${if (user == null) {"进行登录"} else {"退出登录"}}", style = MaterialTheme.typography.bodyMedium)
+                    }
+                    CardButton(
+                        icon = {
+                            Icon(
+                                modifier = Modifier.size(24.dp),
+                                painter = painterResource(R.drawable.controller),
+                                contentDescription = null
+                            )
+                        },
+                        onClick = {downloadHandler()}
+                    ) {
+                        Text(version ?: "未安装", style = MaterialTheme.typography.titleMedium)
+                        Text(if(version == null) {"点按可安装"} else {"启动游戏"}, style = MaterialTheme.typography.bodyMedium)
+                    }
+                    CardButton(
+                        icon = {
+                            Icon(
+                                modifier = Modifier.size(24.dp),
+                                painter = painterResource(R.drawable.cable),
+                                contentDescription = null
+                            )
+                        },
+                        onClick = {connectHandler()}
+                    ) {
+                        Text("连接至专网", style = MaterialTheme.typography.titleMedium)
+                        Text(if(isConnect) {"已连接"} else {"未连接"}, style = MaterialTheme.typography.bodyMedium)
+                    }
+                    CardButton(
+                        icon = {
+                            Icon(
+                                modifier = Modifier.size(24.dp),
+                                imageVector = Icons.Default.Info,
+                                contentDescription = null
+                            )
+                        },
+                        onClick = {aboutHandler()}
+                    ) {
+                        Text("关于${a.getString(R.string.app_name)}", style = MaterialTheme.typography.titleMedium)
                     }
                 }
-            ) {
-                Text(version ?: "未安装", style = MaterialTheme.typography.titleMedium)
-                Text(if(version == null) {"点按可安装"} else {"启动游戏"}, style = MaterialTheme.typography.bodyMedium)
-            }
-            CardButton(
-                icon = {
-                    Icon(
-                        modifier = Modifier.size(24.dp),
-                        painter = painterResource(R.drawable.cable),
-                        contentDescription = null
-                    )
-                },
-                onClick = {
-                    if (user == null) {
-                        Toast.makeText(activity, "要登录先才能用哟~", Toast.LENGTH_SHORT).show()
-                    }
-                    else {
-                        if (isConnect) {
-                            val intent = Intent()
-                            intent.action = Env.SERVICE_CHANNEL
-                            intent.putExtra("action", Env.STOP_SERVICE)
-                            activity.sendBroadcast(intent)
-                        }
-                        else {
-                            val intent = VpnService.prepare(activity)
-                            if (intent == null) {
-                                ConnectorServiceManager.startV2Ray(activity)
-                            }
-                            else {
-                                activity.permissionActivity.launch(intent)
-                            }
-                        }
-                    }
-                }
-            ) {
-                Text("连接至专网", style = MaterialTheme.typography.titleMedium)
-                Text(if(isConnect) {"已连接"} else {"未连接"}, style = MaterialTheme.typography.bodyMedium)
-            }
-            CardButton(
-                icon = {
-                    Icon(
-                        modifier = Modifier.size(24.dp),
-                        imageVector = Icons.Default.Info,
-                        contentDescription = null
-                    )
-                },
-                onClick = {
-                    val intent = Intent(activity, AboutActivity::class.java)
-                    activity.startActivity(intent)
-                }
-            ) {
-                Text("关于${activity.getString(R.string.app_name)}", style = MaterialTheme.typography.titleMedium)
             }
         }
     }
@@ -402,7 +559,7 @@ fun Main(activity: MainActivity) {
                 TextButton(
                     onClick = {
                         unsupportedDialog = false
-                        activity.download(activity.app)
+                        install(a.app)
                     }
                 ) {
                     Text("确定")
@@ -437,7 +594,7 @@ fun Main(activity: MainActivity) {
                 TextButton(
                     onClick = {
                         val intent = Intent(Settings.ACTION_APPLICATION_DEVELOPMENT_SETTINGS)
-                        activity.startActivity(intent)
+                        a.startActivity(intent)
                         usbWarningDialog = false
                     }
                 ) {
@@ -447,8 +604,8 @@ fun Main(activity: MainActivity) {
             dismissButton = {
                 TextButton(
                     onClick = {
-                        val intent = activity.packageManager.getLaunchIntentForPackage(activity.app)
-                        activity.startActivity(intent)
+                        val intent = a.packageManager.getLaunchIntentForPackage(a.app)
+                        a.startActivity(intent)
                         usbWarningDialog = false
                     }
                 ) {
@@ -483,7 +640,7 @@ fun Main(activity: MainActivity) {
                     TextButton(
                         onClick = {
                             incurredDialog = false
-                            activity.download(activity.app)
+                            install(a.app)
                         }
                     ) {
                         Text("确定")
@@ -511,9 +668,9 @@ fun Main(activity: MainActivity) {
 @Composable
 @ExperimentalCoilApi
 @SuppressLint("UnusedMaterial3ScaffoldPaddingParameter")
-fun Unsupported(activity: MainActivity) {
+fun Unsupported(a: MainActivity) {
     val imageLoader = ImageLoader
-        .Builder(activity)
+        .Builder(a)
         .components {
             if (Build.VERSION.SDK_INT >= 28) {
                 add(ImageDecoderDecoder.Factory())
@@ -530,11 +687,11 @@ fun Unsupported(activity: MainActivity) {
             horizontalAlignment = Alignment.CenterHorizontally
         ) {
             Image(
-                modifier = Modifier.size(279.dp, 173.dp).clip(RoundedCornerShape(10.dp)),
+                modifier = Modifier.size(192.dp),
                 painter = rememberAsyncImagePainter(
                     model = ImageRequest
-                        .Builder(activity)
-                        .data(data = R.drawable.bocchi)
+                        .Builder(a)
+                        .data(data = R.drawable.kuromon)
                         .apply(
                             block = fun ImageRequest.Builder.() {
                                 crossfade(true)
@@ -546,9 +703,19 @@ fun Unsupported(activity: MainActivity) {
                 contentDescription = null
             )
             Text(
-                text = "你好像安装了与设备CPU不匹配的ABI变体，你应该安装${activity.deviceAbi}而不是当前的${activity.apkAbi}",
-                modifier = Modifier.padding(top = 16.dp, start = 16.dp, end = 16.dp)
+                text = "你好像安装了与设备CPU不匹配的ABI变体，你应该安装${a.deviceAbi}而不是当前的${a.apkAbi}",
+                modifier = Modifier.padding(horizontal = 16.dp)
             )
+            TextButton(
+                modifier = Modifier.padding(top = 16.dp),
+                onClick = {
+                    val intent = CustomTabsIntent.Builder().build()
+                    val uri = Uri.parse("https://github.com/gd1000m/Kirara-Repo/releases/latest")
+                    intent.launchUrl(a, uri)
+                }
+            ) {
+                Text("前往下载正确的版本")
+            }
         }
     }
 }

@@ -2,21 +2,23 @@ package com.king250.kirafan.model.view
 
 import android.annotation.SuppressLint
 import android.app.Application
+import android.app.NotificationChannel
+import android.app.NotificationManager
 import android.content.BroadcastReceiver
 import android.content.Context
 import android.content.Intent
 import android.content.IntentFilter
 import android.os.Build
 import android.widget.Toast
+import androidx.core.content.ContextCompat.getSystemService
 import androidx.lifecycle.AndroidViewModel
 import com.google.gson.JsonParser
+import com.king250.kirafan.BuildConfig
 import com.king250.kirafan.Env
 import com.king250.kirafan.model.data.UserItem
 import com.king250.kirafan.util.Utils
 import kotlinx.coroutines.Dispatchers
-import kotlinx.coroutines.flow.MutableSharedFlow
 import kotlinx.coroutines.flow.MutableStateFlow
-import kotlinx.coroutines.flow.SharedFlow
 import kotlinx.coroutines.flow.StateFlow
 import kotlinx.coroutines.withContext
 import okhttp3.Request
@@ -25,46 +27,45 @@ import java.io.FileOutputStream
 
 @SuppressLint("UnspecifiedRegisterReceiverFlag")
 class MainState(application: Application) : AndroidViewModel(application) {
-    private val handler = object : BroadcastReceiver() {
-        override fun onReceive(p0: Context?, p1: Intent?) {
-            val context = getApplication<Application>().applicationContext
-            when (p1?.getIntExtra("action", -1)) {
-                Env.SERVICE_STARTED -> {
-                    _isConnect.value = true
-                    Toast.makeText(context, "已连接至专网", Toast.LENGTH_SHORT).show()
-                }
-                Env.SERVICE_STOPPED -> {
-                    _isConnect.value = false
-                    Toast.makeText(context, "已断开连接", Toast.LENGTH_SHORT).show()
-                }
-                else -> {}
-            }
-        }
-    }
-
     private val _user = MutableStateFlow<UserItem?>(null)
 
     private val _version = MutableStateFlow<String?>(null)
 
-    private val _isDisableLogin = MutableStateFlow(true)
+    private val _isDisabledConnect = MutableStateFlow(false)
 
-    private val _isDisableDownload = MutableStateFlow(false)
+    private val _isLoading = MutableStateFlow(true)
 
-    private val _isConnect = MutableStateFlow(false)
-
-    private val _upgrade = MutableSharedFlow<String>()
+    private val _isConnected = MutableStateFlow(false)
 
     val user: StateFlow<UserItem?> = _user
 
     val version: StateFlow<String?> = _version
 
-    val isDisableLogin: StateFlow<Boolean> = _isDisableLogin
+    val isDisabledConnect: StateFlow<Boolean> = _isDisabledConnect
 
-    val isDisableDownload: StateFlow<Boolean> = _isDisableDownload
+    val isLoading: StateFlow<Boolean> = _isLoading
 
-    val isConnect: StateFlow<Boolean> = _isConnect
+    val isConnected: StateFlow<Boolean> = _isConnected
 
-    val upgrade: SharedFlow<String> = _upgrade
+    private val handler = object : BroadcastReceiver() {
+        override fun onReceive(p0: Context?, p1: Intent?) {
+            val context = getApplication<Application>().applicationContext
+            when (p1?.getIntExtra("action", -1)) {
+                Env.SERVICE_STARTED -> {
+                    _isConnected.value = true
+                    Toast.makeText(context, "已连接至专网", Toast.LENGTH_SHORT).show()
+                }
+
+                Env.SERVICE_STOPPED -> {
+                    _isConnected.value = false
+                    Toast.makeText(context, "已断开连接", Toast.LENGTH_SHORT).show()
+                }
+
+                else -> {}
+            }
+            _isDisabledConnect.value = false
+        }
+    }
 
     override fun onCleared() {
         super.onCleared()
@@ -89,79 +90,92 @@ class MainState(application: Application) : AndroidViewModel(application) {
                 }
             }
         }
+        if (Build.VERSION.SDK_INT >= Build.VERSION_CODES.O) {
+            val context = getApplication<Application>().applicationContext
+            val channel = NotificationChannel(
+                Env.NOTIFICATION_CHANNEL,
+                "GNet™ VPN Gateway状态",
+                NotificationManager.IMPORTANCE_LOW
+            ).apply {
+                description = "提示专网连接状态"
+            }
+            val notificationManager = getSystemService(context, NotificationManager::class.java)
+            notificationManager?.createNotificationChannel(channel)
+        }
         if (Build.VERSION.SDK_INT >= Build.VERSION_CODES.TIRAMISU) {
-            getApplication<Application>().registerReceiver(handler, filter, Context.RECEIVER_EXPORTED)
+            getApplication<Application>().registerReceiver(
+                handler,
+                filter,
+                Context.RECEIVER_EXPORTED
+            )
         }
         else {
             getApplication<Application>().registerReceiver(handler, filter)
         }
     }
 
-    suspend fun fetch(token: String) {
+    suspend fun fetch(context: Context) {
         try {
             withContext(Dispatchers.IO) {
-                val request = Request
-                    .Builder()
-                    .url("${Env.QLOGIN_API}/me")
-                    .header("Authorization", "Bearer $token")
-                    .build()
-                val response = Utils.httpClient.newCall(request).execute()
+                val request = Request.Builder().url("${Env.SERVER_API}/1.0/me").build()
+                val response = Utils.http(context).newCall(request).execute()
                 if (response.code == 200) {
                     val result = JsonParser.parseString(response.body?.string()).asJsonObject
-                    response.close()
                     _user.value = UserItem(
                         result.get("name").asString,
                         result.get("avatar").asString
                     )
                 }
+                response.close()
             }
-        }
-        catch (e: Exception) {
+        } catch (e: Exception) {
             e.printStackTrace()
         }
-        _isDisableLogin.value = false
+        _isLoading.value = false
     }
 
     suspend fun check() {
         try {
             withContext(Dispatchers.IO) {
-                val request = Request
-                    .Builder()
-                    .url(Env.RELEASE_API)
-                    .build()
-                val response = Utils.httpClient.newCall(request).execute()
+                val request = Request.Builder().url(Env.RELEASE_API).build()
+                val response = Utils.http().newCall(request).execute()
                 if (response.code == 200) {
                     val result = JsonParser.parseString(response.body?.string()).asJsonObject
-                    _upgrade.emit(result.get("tag_name").asString)
+                    if (result.get("tag_name").asString != BuildConfig.VERSION_NAME) {
+                        withContext(Dispatchers.Main) {
+                            val context = getApplication<Application>().applicationContext
+                            Toast.makeText(context, "发现新版本了！", Toast.LENGTH_SHORT).show()
+                        }
+                    }
                 }
                 else {
                     withContext(Dispatchers.Main) {
                         val context = getApplication<Application>().applicationContext
-                        Toast.makeText(context, "无法获得更新状态，自己还是去看看吧！", Toast.LENGTH_LONG).show()
+                        Toast.makeText(context, "无法获得最新版本状态（", Toast.LENGTH_LONG).show()
                     }
                 }
+                response.close()
             }
-        }
-        catch (e: Exception) {
+        } catch (e: Exception) {
             e.printStackTrace()
             val context = getApplication<Application>().applicationContext
             Toast.makeText(context, "网络好像不太好~", Toast.LENGTH_LONG).show()
         }
     }
 
-    fun login(user: UserItem?) {
-        _user.value = user
+    fun setUser(value: UserItem?) {
+        _user.value = value
     }
 
-    fun update(version: String?) {
-        _version.value = version
+    fun setVersion(value: String?) {
+        _version.value = value
     }
 
-    fun disableLogin(state: Boolean) {
-        _isDisableLogin.value = state
+    fun setIsDisabledConnect(value: Boolean) {
+        _isDisabledConnect.value = value
     }
 
-    fun disableDownload(state: Boolean) {
-        _isDisableDownload.value = state
+    fun setIsLoading(value: Boolean) {
+        _isLoading.value = value
     }
 }

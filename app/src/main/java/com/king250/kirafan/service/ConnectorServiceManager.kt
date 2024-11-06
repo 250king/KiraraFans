@@ -7,15 +7,11 @@ import android.content.Intent
 import android.content.IntentFilter
 import android.os.Build
 import android.widget.Toast
-import androidx.datastore.preferences.core.stringPreferencesKey
 import com.king250.kirafan.Env
-import com.king250.kirafan.dataStore
 import com.king250.kirafan.util.Utils
 import go.Seq
 import kotlinx.coroutines.CoroutineScope
 import kotlinx.coroutines.Dispatchers
-import kotlinx.coroutines.flow.firstOrNull
-import kotlinx.coroutines.flow.map
 import kotlinx.coroutines.launch
 import kotlinx.coroutines.withContext
 import libv2ray.Libv2ray
@@ -89,7 +85,7 @@ object ConnectorServiceManager {
             Seq.setContext(value?.get()?.getService()?.application)
             Libv2ray.initV2Env(
                 value?.get()?.getService()?.getExternalFilesDir("assets")?.absolutePath,
-                Utils.getDID(value?.get()?.getService()?.contentResolver!!)
+                Utils.getAndroidID(value?.get()?.getService()?.contentResolver!!)
             )
         }
 
@@ -100,19 +96,18 @@ object ConnectorServiceManager {
         Toast.makeText(context, "启动中……", Toast.LENGTH_SHORT).show()
         CoroutineScope(Dispatchers.IO).launch {
             try {
-                val token = context.dataStore.data.map{it[stringPreferencesKey("token")]}.firstOrNull()
-                val request = Request
-                    .Builder()
-                    .url("${Env.KIRARA_API}/config")
-                    .header("Authorization", "Bearer $token")
-                    .build()
-                val response = Utils.httpClient.newCall(request).execute()
+                val request = Request.Builder().url("${Env.KIRARA_API}/config").build()
+                val response = Utils.http(context).newCall(request).execute()
                 when (response.code) {
                     200 -> {
                         config = response.body?.string() ?: ""
-                        response.close()
                         val intent = Intent(context, ConnectorVpnService::class.java)
-                        context.startService(intent)
+                        if (Build.VERSION.SDK_INT >= Build.VERSION_CODES.O) {
+                            context.startForegroundService(intent)
+                        }
+                        else {
+                            context.startService(intent)
+                        }
                     }
                     403 -> {
                         withContext(Dispatchers.Main) {
@@ -135,11 +130,22 @@ object ConnectorServiceManager {
                         }
                     }
                 }
+                if (response.code != 200) {
+                    val intent = Intent()
+                    intent.action = Env.UI_CHANNEL
+                    intent.putExtra("action", Env.START_FAILED)
+                    context.sendBroadcast(intent)
+                }
+                response.close()
             }
             catch (e: Exception) {
-                e.printStackTrace()
                 withContext(Dispatchers.Main) {
+                    e.printStackTrace()
                     Toast.makeText(context, "网络好像不太好~", Toast.LENGTH_LONG).show()
+                    val intent = Intent()
+                    intent.action = Env.UI_CHANNEL
+                    intent.putExtra("action", Env.START_FAILED)
+                    context.sendBroadcast(intent)
                 }
             }
         }
