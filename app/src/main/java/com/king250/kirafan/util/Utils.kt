@@ -20,6 +20,7 @@ import okhttp3.OkHttpClient
 import okhttp3.Request
 import okhttp3.Response
 import java.util.Date
+import java.util.concurrent.TimeUnit
 
 object UserAgentInterceptor: Interceptor {
     override fun intercept(chain: Chain): Response {
@@ -91,6 +92,9 @@ object Utils {
     fun http(context: Context? = null): OkHttpClient {
         return OkHttpClient
             .Builder()
+            .connectTimeout(30, TimeUnit.SECONDS)
+            .readTimeout(60, TimeUnit.SECONDS)
+            .writeTimeout(60, TimeUnit.SECONDS)
             .apply {
                 if (context != null) {
                     addInterceptor(TokenInterceptor(context))
