@@ -1,0 +1,13 @@
+{
+  "uniqueId": "hev.sockstun:HevSocks5Tunnel",
+  "developers": [
+    {
+      "name": "hev"
+    }
+  ],
+  "artifactVersion": "2.7.5",
+  "name": "HevSocks5Tunnel",
+  "licenses": [
+    "hev"
+  ]
+}

@@ -1,8 +1,9 @@
 <?xml version="1.0" encoding="utf-8"?>
 <resources>
     <style name="Theme.LaunchTheme" parent="Theme.SplashScreen">
-        <item name="windowSplashScreenBackground">@null</item>
-        <item name="windowSplashScreenAnimatedIcon">@drawable/android_splash_icon</item>
+        <item name="android:windowSplashScreenBackground">?android:attr/colorBackground</item>
+        <item name="android:windowSplashScreenAnimatedIcon">@drawable/android_splash_animate</item>
+        <item name="android:windowSplashScreenAnimationDuration">500</item>
         <item name="postSplashScreenTheme">@style/Theme.KiraraFans</item>
     </style>
 </resources>

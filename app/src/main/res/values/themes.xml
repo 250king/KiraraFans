@@ -3,6 +3,5 @@
     <style name="Theme.KiraraFans" parent="android:Theme.Material.Light.NoActionBar"/>
     <style name="Theme.LaunchTheme" parent="android:Theme.Material.Light.NoActionBar">
         <item name="android:windowBackground">@drawable/android_splash</item>
-        <item name="android:statusBarColor">@color/white</item>
     </style>
 </resources>

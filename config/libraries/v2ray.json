@@ -1,0 +1,14 @@
+{
+  "uniqueId": "com.v2ray.ang:AndroidLibXrayLite",
+  "developers": [
+    {
+      "name": "2dust"
+    }
+  ],
+  "artifactVersion": "24.9.30",
+  "description": "",
+  "name": "AndroidLibXrayLite",
+  "licenses": [
+    "v2ray"
+  ]
+}

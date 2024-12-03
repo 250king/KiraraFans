@@ -1,9 +1,9 @@
 <?xml version="1.0" encoding="utf-8"?>
 <layer-list xmlns:android="http://schemas.android.com/apk/res/android">
-    <item android:drawable="@color/white" />
+    <item android:drawable="?android:attr/colorBackground" />
     <item
-        android:width="192dp"
-        android:height="192dp"
+        android:width="288dp"
+        android:height="288dp"
         android:gravity="center">
         <inset
             android:drawable="@drawable/android_splash_icon" />

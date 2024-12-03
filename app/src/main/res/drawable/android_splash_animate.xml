@@ -1,0 +1,44 @@
+<animated-vector xmlns:android="http://schemas.android.com/apk/res/android"
+    xmlns:aapt="http://schemas.android.com/aapt">
+    <aapt:attr name="android:drawable">
+        <vector
+            android:name="vector"
+            android:width="288dp"
+            android:height="288dp"
+            android:viewportWidth="288"
+            android:viewportHeight="288">
+            <group
+                android:name="inner_group"
+                android:pivotX="144"
+                android:pivotY="144">
+                <path
+                    android:name="back"
+                    android:strokeWidth="1"
+                    android:pathData="m140.63,205.28l-41.84,14.86a10.04,10.04 0,0 1,-13.4 -9.74l1.22,-44.38a10.04,10.04 0,0 0,-2.08 -6.41l-27.09,-35.19a10.04,10.04 0,0 1,5.12 -15.75l42.6,-12.55a10.04,10.04 0,0 0,5.44 -3.96l25.11,-36.64a10.04,10.04 0,0 1,16.56 0l25.1,36.64a10.04,10.04 0,0 0,5.45 3.95l42.6,12.56a10.04,10.04 0,0 1,5.12 15.76l-27.09,35.19a10.04,10.04 0,0 0,-2.08 6.41l1.22,44.39a10.04,10.04 0,0 1,-13.4 9.74l-41.84,-14.89a10.04,10.04 0,0 0,-6.73 0l0,0.01z"
+                    android:fillColor="#ffdc57"/>
+            </group>
+        </vector>
+    </aapt:attr>
+    <target android:name="back">
+        <aapt:attr name="android:animation">
+            <objectAnimator
+                android:duration="500"
+                android:interpolator="@android:anim/accelerate_decelerate_interpolator"
+                android:propertyName="fillAlpha"
+                android:valueFrom="1"
+                android:valueTo="0.75"
+                android:valueType="floatType" />
+        </aapt:attr>
+    </target>
+    <target android:name="inner_group">
+        <aapt:attr name="android:animation">
+            <objectAnimator
+                android:duration="500"
+                android:interpolator="@android:anim/accelerate_decelerate_interpolator"
+                android:propertyName="rotation"
+                android:valueFrom="0"
+                android:valueTo="45"
+                android:valueType="floatType" />
+        </aapt:attr>
+    </target>
+</animated-vector>

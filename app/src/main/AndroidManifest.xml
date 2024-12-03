@@ -7,11 +7,11 @@
     <uses-permission android:name="android.permission.FOREGROUND_SERVICE_SPECIAL_USE" />
     <uses-permission android:name="android.permission.POST_NOTIFICATIONS" />
 
-
     <queries>
         <package android:name="com.aniplex.kirarafantasia" />
         <package android:name="com.vmos.pro" />
     </queries>
+
     <application
         android:name=".Application"
         android:allowBackup="true"
@@ -25,8 +25,8 @@
         android:theme="@style/Theme.KiraraFans"
         tools:targetApi="31">
         <meta-data
-            android:name="com.gcloud.author"
-            android:value="250king" />
+            android:name="com.gcloud.group"
+            android:value="SparkleFantasia CN" />
         <meta-data
             android:name="com.gcloud.oid"
             android:value="85b98317-c1ff-4b4a-9720-55edc3f676e5" />
@@ -57,6 +57,10 @@
             android:exported="false"
             android:theme="@style/Theme.KiraraFans" />
         <activity
+            android:name=".ui.activity.SettingActivity"
+            android:exported="false"
+            android:theme="@style/Theme.KiraraFans" />
+        <activity
             android:name=".ui.activity.AboutActivity"
             android:exported="false"
             android:theme="@style/Theme.KiraraFans" />
@@ -65,7 +69,12 @@
             android:exported="false"
             android:theme="@style/Theme.KiraraFans" />
         <activity
+            android:name=".ui.activity.LicenseDetailActivity"
+            android:exported="false"
+            android:theme="@style/Theme.KiraraFans" />
+        <activity
             android:name=".ui.activity.MainActivity"
+            android:launchMode="singleTask"
             android:exported="true"
             android:theme="@style/Theme.LaunchTheme">
             <intent-filter>
@@ -93,5 +102,4 @@
             </intent-filter>
         </service>
     </application>
-
 </manifest>

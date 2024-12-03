@@ -1,0 +1,12 @@
+socks5:
+  port: 10808
+  address: 127.0.0.1
+  udp: 'udp'
+
+misc:
+  log-level: info
+
+tunnel:
+  name: tun0
+  mtu: 1500
+  ipv4: 26.26.26.2

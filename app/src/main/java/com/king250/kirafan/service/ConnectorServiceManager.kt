@@ -6,9 +6,9 @@ import android.content.Context
 import android.content.Intent
 import android.content.IntentFilter
 import android.os.Build
-import android.widget.Toast
 import com.king250.kirafan.Env
-import com.king250.kirafan.util.Utils
+import com.king250.kirafan.ui.activity.MainActivity
+import com.king250.kirafan.Util
 import go.Seq
 import kotlinx.coroutines.CoroutineScope
 import kotlinx.coroutines.Dispatchers
@@ -85,48 +85,53 @@ object ConnectorServiceManager {
             Seq.setContext(value?.get()?.getService()?.application)
             Libv2ray.initV2Env(
                 value?.get()?.getService()?.getExternalFilesDir("assets")?.absolutePath,
-                Utils.getAndroidID(value?.get()?.getService()?.contentResolver!!)
+                Util.getAndroidId(value?.get()?.getService()?.contentResolver!!)
             )
         }
 
-    fun startV2Ray(context: Context) {
+    fun startV2Ray(a: MainActivity) {
         if (v2RayPoint.isRunning) {
             return
         }
-        Toast.makeText(context, "启动中……", Toast.LENGTH_SHORT).show()
-        CoroutineScope(Dispatchers.IO).launch {
-            try {
+        a.v.showSnackBar("启动中……")
+        try {
+            CoroutineScope(Dispatchers.IO).launch {
                 val request = Request.Builder().url("${Env.KIRARA_API}/config").build()
-                val response = Utils.http(context).newCall(request).execute()
+                val response = Util.http(a, true).newCall(request).execute()
                 when (response.code) {
                     200 -> {
                         config = response.body?.string() ?: ""
-                        val intent = Intent(context, ConnectorVpnService::class.java)
+                        val intent = Intent(a, ConnectorVpnService::class.java)
                         if (Build.VERSION.SDK_INT >= Build.VERSION_CODES.O) {
-                            context.startForegroundService(intent)
+                            a.startForegroundService(intent)
                         }
                         else {
-                            context.startService(intent)
+                            a.startService(intent)
+                        }
+                    }
+                    401 -> {
+                        withContext(Dispatchers.Main) {
+                            a.logout()
                         }
                     }
                     403 -> {
                         withContext(Dispatchers.Main) {
-                            Toast.makeText(context, "因为账号有些问题，部分功能暂时受限", Toast.LENGTH_LONG).show()
+                            a.v.showSnackBar("账号违规被封了（")
                         }
                     }
                     404 -> {
                         withContext(Dispatchers.Main) {
-                            Toast.makeText(context, "你还没有使用资格哟！", Toast.LENGTH_LONG).show()
+                            a.v.showSnackBar("没有相应的配置文件（")
                         }
                     }
                     410 -> {
                         withContext(Dispatchers.Main) {
-                            Toast.makeText(context, "账号过期了！", Toast.LENGTH_LONG).show()
+                            a.v.showSnackBar("账号过期了（")
                         }
                     }
-                    in 500..599 -> {
+                    else -> {
                         withContext(Dispatchers.Main) {
-                            Toast.makeText(context, "服务器炸了！", Toast.LENGTH_LONG).show()
+                            a.v.showSnackBar("服务器炸了！")
                         }
                     }
                 }
@@ -134,29 +139,24 @@ object ConnectorServiceManager {
                     val intent = Intent()
                     intent.action = Env.UI_CHANNEL
                     intent.putExtra("action", Env.START_FAILED)
-                    context.sendBroadcast(intent)
+                    a.sendBroadcast(intent)
                 }
                 response.close()
             }
-            catch (e: Exception) {
-                withContext(Dispatchers.Main) {
-                    e.printStackTrace()
-                    Toast.makeText(context, "网络好像不太好~", Toast.LENGTH_LONG).show()
-                    val intent = Intent()
-                    intent.action = Env.UI_CHANNEL
-                    intent.putExtra("action", Env.START_FAILED)
-                    context.sendBroadcast(intent)
-                }
-            }
+        }
+        catch (e: Exception) {
+            e.printStackTrace()
+            a.v.showSnackBar("网络好像不太好哦~")
+            val intent = Intent()
+            intent.action = Env.UI_CHANNEL
+            intent.putExtra("action", Env.START_FAILED)
+            a.sendBroadcast(intent)
         }
     }
 
     fun startV2RayPoint() {
         val service = serviceControl?.get()?.getService() ?: return
-        if (v2RayPoint.isRunning) {
-            return
-        }
-        if (config.isEmpty()) {
+        if (v2RayPoint.isRunning || config.isEmpty()) {
             return
         }
         val filter = IntentFilter(Env.SERVICE_CHANNEL)

@@ -1,18 +1,14 @@
 package com.king250.kirafan.ui.activity
 
-import android.annotation.SuppressLint
 import android.content.Intent
-import android.net.Uri
-import android.os.Build
 import android.os.Bundle
 import androidx.activity.ComponentActivity
 import androidx.activity.compose.setContent
-import androidx.browser.customtabs.CustomTabsIntent
+import androidx.activity.enableEdgeToEdge
 import androidx.compose.foundation.Image
 import androidx.compose.foundation.clickable
 import androidx.compose.foundation.layout.Column
 import androidx.compose.foundation.layout.Spacer
-import androidx.compose.foundation.layout.fillMaxSize
 import androidx.compose.foundation.layout.fillMaxWidth
 import androidx.compose.foundation.layout.height
 import androidx.compose.foundation.layout.padding
@@ -30,7 +26,6 @@ import androidx.compose.material3.IconButton
 import androidx.compose.material3.ListItem
 import androidx.compose.material3.MaterialTheme
 import androidx.compose.material3.Scaffold
-import androidx.compose.material3.Surface
 import androidx.compose.material3.Text
 import androidx.compose.material3.TopAppBar
 import androidx.compose.runtime.Composable
@@ -40,62 +35,38 @@ import androidx.compose.ui.draw.clip
 import androidx.compose.ui.text.buildAnnotatedString
 import androidx.compose.ui.unit.dp
 import androidx.compose.ui.unit.sp
-import coil.ImageLoader
 import coil.compose.AsyncImage
 import coil.compose.rememberAsyncImagePainter
-import coil.decode.GifDecoder
-import coil.decode.ImageDecoderDecoder
 import coil.request.ImageRequest
 import com.king250.kirafan.BuildConfig
 import com.king250.kirafan.R
+import com.king250.kirafan.Util
 import com.king250.kirafan.model.data.AboutItem
 import com.king250.kirafan.model.data.DeveloperItem
 import com.king250.kirafan.ui.theme.KiraraFansTheme
 
 class AboutActivity : ComponentActivity() {
     override fun onCreate(savedInstanceState: Bundle?) {
+        enableEdgeToEdge()
         super.onCreate(savedInstanceState)
         setContent {
             KiraraFansTheme {
-                Surface(modifier = Modifier.fillMaxSize(), color = MaterialTheme.colorScheme.background) {
-                    Main(this)
-                }
+                Main(this)
             }
         }
     }
 }
 
-@Suppress("FunctionName")
-@SuppressLint("UnusedMaterial3ScaffoldPaddingParameter")
 @OptIn(ExperimentalMaterial3Api::class)
 @Composable
 fun Main(a: AboutActivity) {
     val scrollState = rememberScrollState()
-    val imageLoader = ImageLoader
-        .Builder(a)
-        .components {
-            if (Build.VERSION.SDK_INT >= 28) {
-                add(ImageDecoderDecoder.Factory())
-            } else {
-                add(GifDecoder.Factory())
-            }
-        }
-        .build()
     val items = listOf(
-        AboutItem("获得最新版") {
-            val intent = CustomTabsIntent.Builder().build()
-            val uri = Uri.parse("https://github.com/gd1000m/Kirara-Repo/releases/latest")
-            intent.launchUrl(a, uri)
-        },
         AboutItem("一起来玩") {
-            val intent = CustomTabsIntent.Builder().build()
-            val uri = Uri.parse("https://discord.gg/YmbbxDsbNB")
-            intent.launchUrl(a, uri)
+            Util.open(a, "https://discord.gg/YmbbxDsbNB")
         },
         AboutItem("项目地址") {
-            val intent = CustomTabsIntent.Builder().build()
-            val uri = Uri.parse("https://gitlab.com/kirafan/sparkle/server")
-            intent.launchUrl(a, uri)
+            Util.open(a, "https://gitlab.com/kirafan/sparkle/server")
         },
         AboutItem("开源许可证") {
             val intent = Intent(a, LicenseActivity::class.java)
@@ -109,7 +80,6 @@ fun Main(a: AboutActivity) {
         DeveloperItem("y52en", "https://avatars.githubusercontent.com/u/61645319", "https://github.com/y52en"),
         DeveloperItem("He Li", "https://avatars.githubusercontent.com/u/53819558", "https://github.com/lihe07")
     )
-
 
     Scaffold(
         topBar = {
@@ -136,14 +106,11 @@ fun Main(a: AboutActivity) {
                     painter = rememberAsyncImagePainter(
                         model = ImageRequest
                             .Builder(a)
-                            .data(data = R.drawable.ic_launcher_round)
-                            .apply(
-                                block = fun ImageRequest.Builder.() {
-                                    crossfade(true)
-                                }
-                            )
-                            .build(),
-                        imageLoader = imageLoader
+                            .data(R.drawable.ic_launcher_round)
+                            .apply {
+                                crossfade(true)
+                            }
+                            .build()
                     ),
                     modifier = Modifier.requiredSize(96.dp).clip(CircleShape),
                     contentDescription = null
@@ -172,32 +139,37 @@ fun Main(a: AboutActivity) {
                 style = MaterialTheme.typography.bodyMedium,
                 color = MaterialTheme.colorScheme.primary
             )
-            developers.forEach { item ->
+            developers.forEach {
                 ListItem(
                     modifier = Modifier.clickable {
-                        val intent = CustomTabsIntent.Builder().build()
-                        intent.launchUrl(a, Uri.parse(item.url))
+                        Util.open(a, it.url)
                     },
                     headlineContent = {
-                        Text(item.name)
+                        Text(it.name)
                     },
                     leadingContent = {
                         AsyncImage(
                             modifier = Modifier.clip(CircleShape).size(48.dp),
-                            model = item.avatar,
+                            model = ImageRequest
+                                .Builder(a)
+                                .data(it.avatar)
+                                .apply {
+                                    crossfade(true)
+                                }
+                                .build(),
                             contentDescription = null
                         )
                     }
                 )
             }
             HorizontalDivider(Modifier.padding(vertical = 16.dp))
-            items.forEach { item ->
+            items.forEach {
                 ListItem(
                     modifier = Modifier.clickable {
-                        item.action()
+                        it.action()
                     },
                     headlineContent = {
-                        Text(item.name)
+                        Text(it.name)
                     }
                 )
             }

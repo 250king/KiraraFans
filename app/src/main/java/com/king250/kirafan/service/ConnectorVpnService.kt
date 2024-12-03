@@ -3,12 +3,11 @@ package com.king250.kirafan.service
 import android.app.PendingIntent
 import android.app.Service
 import android.content.Intent
-import android.net.LocalSocket
-import android.net.LocalSocketAddress
 import android.net.VpnService
 import android.os.Build
 import android.os.ParcelFileDescriptor
 import android.os.StrictMode
+import androidx.annotation.Keep
 import androidx.core.app.NotificationCompat
 import com.king250.kirafan.Env
 import com.king250.kirafan.R
@@ -28,7 +27,19 @@ class ConnectorVpnService : VpnService(), ServiceControl {
 
     private lateinit var fd: ParcelFileDescriptor
 
-    private lateinit var process: Process
+    init {
+        System.loadLibrary("hev-socks5-tunnel")
+    }
+
+    @Suppress("FunctionName")
+    private external fun TProxyStartService(configPath: String, fd: Int)
+
+    @Suppress("FunctionName")
+    private external fun TProxyStopService()
+
+    @Keep
+    @Suppress("FunctionName", "unused")
+    private external fun TProxyGetStats(): LongArray
 
     override fun onCreate() {
         super.onCreate()
@@ -44,13 +55,20 @@ class ConnectorVpnService : VpnService(), ServiceControl {
     override fun onStartCommand(intent: Intent?, flags: Int, startId: Int): Int {
         ConnectorServiceManager.startV2RayPoint()
         val mainIntent = Intent(this, MainActivity::class.java)
-        mainIntent.flags = Intent.FLAG_ACTIVITY_SINGLE_TOP or Intent.FLAG_ACTIVITY_CLEAR_TOP
-        val pendingIntent = PendingIntent.getActivity(this, 0, mainIntent, PendingIntent.FLAG_UPDATE_CURRENT or PendingIntent.FLAG_IMMUTABLE)
+        mainIntent.flags = Intent.FLAG_ACTIVITY_SINGLE_TOP or Intent.FLAG_ACTIVITY_CLEAR_TOP or Intent.FLAG_ACTIVITY_REORDER_TO_FRONT
+        val pendingIntent = PendingIntent.getActivity(
+            this,
+            0,
+            mainIntent,
+            PendingIntent.FLAG_UPDATE_CURRENT or PendingIntent.FLAG_IMMUTABLE
+        )
         val notification = NotificationCompat.Builder(this, Env.NOTIFICATION_CHANNEL)
-            .setContentTitle("GNet™ VPN Gateway")
-            .setContentText("已连接至主节点")
+            .setContentTitle("GNet™ VPN Gateway Connector")
+            .setContentText("已连接至SparkleFantasia CN组织机构专用网络")
             .setSmallIcon(R.drawable.ic_notification)
             .setContentIntent(pendingIntent)
+            .setAutoCancel(false)
+            .setOngoing(true)
             .build()
         startForeground(1, notification)
         return START_STICKY
@@ -101,7 +119,7 @@ class ConnectorVpnService : VpnService(), ServiceControl {
     private fun stopV2Ray(isForced: Boolean = true) {
         isRunning = false
         try {
-            process.destroy()
+            TProxyStopService()
         } catch (e: Exception) {
             e.printStackTrace()
         }
@@ -116,54 +134,16 @@ class ConnectorVpnService : VpnService(), ServiceControl {
     }
 
     private fun runTun2socks() {
-        val socksPort = 10808
-        val cmd = arrayListOf(
-            File(applicationContext.applicationInfo.nativeLibraryDir, "libtun2socks.so").absolutePath,
-            "--netif-ipaddr", "26.26.26.2",
-            "--netif-netmask", "255.255.255.252",
-            "--socks-server-addr", "127.0.0.1:$socksPort",
-            "--tunmtu", "1500",
-            "--sock-path", "sock_path",
-            "--enable-udprelay",
-            "--loglevel", "notice",
-        )
         try {
-            val proBuilder = ProcessBuilder(cmd)
-            proBuilder.redirectErrorStream(true)
-            process = proBuilder.directory(applicationContext.filesDir).start()
-            Thread {
-                process.waitFor()
+            CoroutineScope(Dispatchers.IO).launch {
                 if (isRunning) {
-                    runTun2socks()
+                    val dir = getExternalFilesDir("assets")?.absolutePath
+                    TProxyStartService(File(dir, "tunnel.yaml").absolutePath, fd.fd)
                 }
-            }.start()
-            sendFd()
+            }
         } catch (e: Exception) {
             e.printStackTrace()
             stopService()
-        }
-    }
-
-    private fun sendFd() {
-        val fd = fd.fileDescriptor
-        val path = File(applicationContext.filesDir, "sock_path").absolutePath
-        CoroutineScope(Dispatchers.IO).launch {
-            var tries = 0
-            while (true) {
-                try {
-                    Thread.sleep(50L shl tries)
-                    LocalSocket().use { localSocket ->
-                        localSocket.connect(LocalSocketAddress(path, LocalSocketAddress.Namespace.FILESYSTEM))
-                        localSocket.setFileDescriptorsForSend(arrayOf(fd))
-                        localSocket.outputStream.write(42)
-                    }
-                    break
-                } catch (e: Exception) {
-                    e.printStackTrace()
-                    if (tries > 5) break
-                    tries += 1
-                }
-            }
         }
     }
 }
