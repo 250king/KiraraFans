@@ -1,9 +1,17 @@
 package com.king250.kirafan
 
+import android.os.Build
+
 object Env {
+    val HEIGHT_ANDROID = Build.VERSION.SDK_INT >= Build.VERSION_CODES.UPSIDE_DOWN_CAKE
+
+    val TARGET_PACKAGE = if (HEIGHT_ANDROID) {"com.vmos.openapp"} else {"com.aniplex.kirarafantasia"}
+
+    val DEVICE_ABI: String? = Build.SUPPORTED_ABIS[0]
+
     const val SERVER_API = "https://api.250king.top"
 
-    const val KIRARA_API = "https://vpc.kirara.us.kg/proxy/api"
+    const val KIRARA_API = "https://vpc.sparklefantasia.com/api"
 
     const val RELEASE_API = "https://api.github.com/repos/gd1000m/Kirara-Repo/releases/latest"
 
@@ -15,7 +23,7 @@ object Env {
 
     const val BASIC_AUTH = "MmU5N2ZlYTAtNzhlZS00MDRjLThkMzItMTYzOWJkNzk1OTZkOlQ3OSFDKXMkcThoKmNQZWEwI0gzbnlEV0tGelhCWWNa"
 
-    const val PROXY_HOST = "vpc.kirara.us.kg:443"
+    const val PROXY_HOST = "vpc.sparklefantasia.com:443"
 
     const val SERVICE_CHANNEL = "com.king250.kirafan.service.ConnectorVpnService"
 
@@ -30,4 +38,6 @@ object Env {
     const val STOP_SERVICE = 2
 
     const val START_FAILED = 3
+
+    const val COPY_URL = 4
 }

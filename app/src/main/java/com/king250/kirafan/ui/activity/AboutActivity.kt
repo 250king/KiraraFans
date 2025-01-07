@@ -40,7 +40,7 @@ import coil.compose.rememberAsyncImagePainter
 import coil.request.ImageRequest
 import com.king250.kirafan.BuildConfig
 import com.king250.kirafan.R
-import com.king250.kirafan.Util
+import com.king250.kirafan.util.ClientUtil
 import com.king250.kirafan.model.data.AboutItem
 import com.king250.kirafan.model.data.DeveloperItem
 import com.king250.kirafan.ui.theme.KiraraFansTheme
@@ -63,10 +63,10 @@ fun Main(a: AboutActivity) {
     val scrollState = rememberScrollState()
     val items = listOf(
         AboutItem("一起来玩") {
-            Util.open(a, "https://discord.gg/YmbbxDsbNB")
+            ClientUtil.open(a, "https://discord.gg/YmbbxDsbNB")
         },
         AboutItem("项目地址") {
-            Util.open(a, "https://gitlab.com/kirafan/sparkle/server")
+            ClientUtil.open(a, "https://gitlab.com/kirafan/sparkle/server")
         },
         AboutItem("开源许可证") {
             val intent = Intent(a, LicenseActivity::class.java)
@@ -142,7 +142,7 @@ fun Main(a: AboutActivity) {
             developers.forEach {
                 ListItem(
                     modifier = Modifier.clickable {
-                        Util.open(a, it.url)
+                        ClientUtil.open(a, it.url)
                     },
                     headlineContent = {
                         Text(it.name)

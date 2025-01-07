@@ -2,13 +2,15 @@ package com.king250.kirafan.service
 
 import android.annotation.SuppressLint
 import android.content.BroadcastReceiver
+import android.content.ClipData
 import android.content.Context
 import android.content.Intent
 import android.content.IntentFilter
 import android.os.Build
+import android.content.ClipboardManager
 import com.king250.kirafan.Env
 import com.king250.kirafan.ui.activity.MainActivity
-import com.king250.kirafan.Util
+import com.king250.kirafan.util.ClientUtil
 import go.Seq
 import kotlinx.coroutines.CoroutineScope
 import kotlinx.coroutines.Dispatchers
@@ -63,8 +65,13 @@ class Handler: BroadcastReceiver() {
     override fun onReceive(p0: Context?, p1: Intent?) {
         val serviceControl = ConnectorServiceManager.serviceControl?.get() ?: return
         when (p1?.getIntExtra("action", -1)) {
-            Env.STOP_SERVICE -> {
+            Env.STOP_SERVICE, Env.START_FAILED -> {
                 serviceControl.stopService()
+            }
+            Env.COPY_URL -> {
+                val cm = p0?.getSystemService(Context.CLIPBOARD_SERVICE) as ClipboardManager
+                cm.setPrimaryClip(ClipData.newPlainText(null, "https://vpc.sparklefantasia.com/get"))
+                ClientUtil.toast(p0, "已成功复制到剪切板")
             }
             else -> {}
         }
@@ -85,7 +92,7 @@ object ConnectorServiceManager {
             Seq.setContext(value?.get()?.getService()?.application)
             Libv2ray.initV2Env(
                 value?.get()?.getService()?.getExternalFilesDir("assets")?.absolutePath,
-                Util.getAndroidId(value?.get()?.getService()?.contentResolver!!)
+                ClientUtil.getAndroidId(value?.get()?.getService()?.contentResolver!!)
             )
         }
 
@@ -94,63 +101,57 @@ object ConnectorServiceManager {
             return
         }
         a.v.showSnackBar("启动中……")
-        try {
-            CoroutineScope(Dispatchers.IO).launch {
+        CoroutineScope(Dispatchers.IO).launch {
+            try {
                 val request = Request.Builder().url("${Env.KIRARA_API}/config").build()
-                val response = Util.http(a, true).newCall(request).execute()
-                when (response.code) {
-                    200 -> {
-                        config = response.body?.string() ?: ""
-                        val intent = Intent(a, ConnectorVpnService::class.java)
-                        if (Build.VERSION.SDK_INT >= Build.VERSION_CODES.O) {
-                            a.startForegroundService(intent)
+                val response = ClientUtil.http(a, true).newCall(request).execute()
+                withContext(Dispatchers.Main) {
+                    when (response.code) {
+                        200 -> {
+                            config = response.body?.string() ?: ""
+                            val intent = Intent(a, ConnectorVpnService::class.java)
+                            if (Build.VERSION.SDK_INT >= Build.VERSION_CODES.O) {
+                                a.startForegroundService(intent)
+                            }
+                            else {
+                                a.startService(intent)
+                            }
                         }
-                        else {
-                            a.startService(intent)
-                        }
-                    }
-                    401 -> {
-                        withContext(Dispatchers.Main) {
+                        401 -> {
                             a.logout()
                         }
-                    }
-                    403 -> {
-                        withContext(Dispatchers.Main) {
+                        403 -> {
                             a.v.showSnackBar("账号违规被封了（")
                         }
-                    }
-                    404 -> {
-                        withContext(Dispatchers.Main) {
+                        404 -> {
                             a.v.showSnackBar("没有相应的配置文件（")
                         }
-                    }
-                    410 -> {
-                        withContext(Dispatchers.Main) {
+                        410 -> {
                             a.v.showSnackBar("账号过期了（")
                         }
-                    }
-                    else -> {
-                        withContext(Dispatchers.Main) {
+                        else -> {
                             a.v.showSnackBar("服务器炸了！")
                         }
                     }
+                    if (response.code != 200) {
+                        val intent = Intent()
+                        intent.action = Env.UI_CHANNEL
+                        intent.putExtra("action", Env.START_FAILED)
+                        a.sendBroadcast(intent)
+                    }
+                    response.close()
                 }
-                if (response.code != 200) {
+            }
+            catch (e: Exception) {
+                e.printStackTrace()
+                withContext(Dispatchers.Main) {
+                    a.v.showSnackBar("网络好像不太好哦~")
                     val intent = Intent()
                     intent.action = Env.UI_CHANNEL
                     intent.putExtra("action", Env.START_FAILED)
                     a.sendBroadcast(intent)
                 }
-                response.close()
             }
-        }
-        catch (e: Exception) {
-            e.printStackTrace()
-            a.v.showSnackBar("网络好像不太好哦~")
-            val intent = Intent()
-            intent.action = Env.UI_CHANNEL
-            intent.putExtra("action", Env.START_FAILED)
-            a.sendBroadcast(intent)
         }
     }
 

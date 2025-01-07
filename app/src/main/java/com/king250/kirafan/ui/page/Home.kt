@@ -45,14 +45,15 @@ import coil.compose.AsyncImage
 import coil.request.ImageRequest
 import com.king250.kirafan.Env
 import com.king250.kirafan.R
-import com.king250.kirafan.Util
+import com.king250.kirafan.util.ClientUtil
 import com.king250.kirafan.dataStore
 import com.king250.kirafan.ui.activity.InfoActivity
 import com.king250.kirafan.ui.activity.MainActivity
 import com.king250.kirafan.ui.activity.SettingActivity
 import com.king250.kirafan.ui.component.CardButton
-import com.king250.kirafan.ui.component.dialog.EnvWarningDialog
+import com.king250.kirafan.ui.component.dialog.RootDialog
 import com.king250.kirafan.ui.component.dialog.UnsupportedDialog
+import com.king250.kirafan.ui.component.dialog.UsbDialog
 import com.king250.kirafan.ui.component.dialog.VersionBadDialog
 import kotlinx.coroutines.Dispatchers
 import kotlinx.coroutines.flow.firstOrNull
@@ -74,7 +75,6 @@ fun Home(a: MainActivity) {
     val isConnect by a.v.isConnected.collectAsState()
     val isLoading by a.v.isLoading.collectAsState()
     val isNeedUpdate by a.v.isNeedUpdate.collectAsState()
-    val isDisabledDownload by a.v.isDisabledInstall.collectAsState()
     val isDisabledConnect by a.v.isDisabledConnect.collectAsState()
     var isDisabledLogin by remember { mutableStateOf(false) }
 
@@ -82,15 +82,15 @@ fun Home(a: MainActivity) {
         if (!isDisabledLogin) {
             if (user == null) {
                 val redirectUri = URLEncoder.encode(Env.REDIRECT_URI, "utf-8")
-                Util.open(
+                ClientUtil.open(
                     context = a,
                     url = "${Env.AUTHORIZE_URI}?client_id=${Env.CLIENT_ID}&redirect_uri=${redirectUri}"
                 )
             }
             else {
+                isDisabledLogin = true
                 scope.launch {
                     withContext(Dispatchers.IO) {
-                        isDisabledLogin = true
                         val refreshToken = a
                             .dataStore
                             .data
@@ -106,7 +106,7 @@ fun Home(a: MainActivity) {
                             .header("Authorization", "Basic ${Env.BASIC_AUTH}")
                             .post(body)
                             .build()
-                        Util.http(a).newCall(request).execute()
+                        ClientUtil.http(a).newCall(request).execute()
                         a.logout(false)
                         isDisabledLogin = false
                     }
@@ -115,26 +115,33 @@ fun Home(a: MainActivity) {
         }
     }
     fun downloadHandler() {
-        if (version == null && !isDisabledDownload) {
-            if (a.isSpecial) {
+        if (version == null) {
+            if (Env.HEIGHT_ANDROID) {
                 a.v.setIsUnsupported(true)
             }
             else {
-                a.install(a.app)
+                a.install(Env.TARGET_PACKAGE)
             }
         }
         else {
-            if (a.app == "com.aniplex.kirarafantasia" && version != "3.6.0") {
-                a.v.setIsVersionBad(true)
-            }
-            else {
-                if (a.app == "com.aniplex.kirarafantasia" && (Util.isDebug(a.contentResolver) || Util.isRooted() /*|| Util.isEmulator()*/)) {
-                    a.v.setIsEnvWarning(true)
+            if (Env.TARGET_PACKAGE == "com.aniplex.kirarafantasia") {
+                if (version != "3.6.0") {
+                    a.v.setIsVersionBad(true)
+                }
+                else if (ClientUtil.isRooted()) {
+                    a.v.setIsRoot(true)
+                }
+                else if (ClientUtil.isDebug(a.contentResolver)) {
+                    a.v.setIsUsb(true)
                 }
                 else {
-                    val intent = a.packageManager.getLaunchIntentForPackage(a.app)
+                    val intent = a.packageManager.getLaunchIntentForPackage(Env.TARGET_PACKAGE)
                     a.startActivity(intent)
                 }
+            }
+            else {
+                val intent = a.packageManager.getLaunchIntentForPackage(Env.TARGET_PACKAGE)
+                a.startActivity(intent)
             }
         }
     }
@@ -210,11 +217,17 @@ fun Home(a: MainActivity) {
                                 )
                             },
                             onClick = {
-                                Util.open(a, "https://github.com/gd1000m/Kirara-Repo/releases/latest")
+                                ClientUtil.open(a, "https://github.com/gd1000m/Kirara-Repo/releases/latest")
                             }
                         ) {
-                            Text("有新版本发布了", style = MaterialTheme.typography.titleMedium)
-                            Text("点按可下载安装最新版", style = MaterialTheme.typography.bodyMedium)
+                            Text(
+                                text = "有新版本发布了",
+                                style = MaterialTheme.typography.titleMedium
+                            )
+                            Text(
+                                text = "点按可下载安装最新版",
+                                style = MaterialTheme.typography.bodyMedium
+                            )
                         }
                     }
                     CardButton(
@@ -230,8 +243,14 @@ fun Home(a: MainActivity) {
                             a.startActivity(intent)
                         }
                     ) {
-                        Text("Android ${Build.VERSION.RELEASE}", style = MaterialTheme.typography.titleMedium)
-                        Text("点按可查看设备详情", style = MaterialTheme.typography.bodyMedium)
+                        Text(
+                            text = "Android ${Build.VERSION.RELEASE}",
+                            style = MaterialTheme.typography.titleMedium
+                        )
+                        Text(
+                            text = "点按可查看设备详情",
+                            style = MaterialTheme.typography.bodyMedium
+                        )
                     }
                     CardButton(
                         icon = {
@@ -258,19 +277,30 @@ fun Home(a: MainActivity) {
                         },
                         onClick = {loginHandler()}
                     ) {
-                        Text(user?.name ?: "未登录", style = MaterialTheme.typography.titleMedium)
-                        Text("点击${if (user == null) {"进行登录"} else {"退出登录"}}", style = MaterialTheme.typography.bodyMedium)
+                        Text(
+                            text = user?.name ?: "未登录",
+                            style = MaterialTheme.typography.titleMedium
+                        )
+                        Text(
+                            text = "点击${if (user == null) {"进行登录"} else {"退出登录"}}",
+                            style = MaterialTheme.typography.bodyMedium
+                        )
                     }
                     AnimatedVisibility(
                         visible = user != null
                     ) {
                         CardButton(
                             icon = {
-                                Icon(
-                                    modifier = Modifier.size(24.dp),
-                                    painter = painterResource(R.drawable.cable),
-                                    contentDescription = null
-                                )
+                                if (isDisabledConnect) {
+                                    CircularProgressIndicator()
+                                }
+                                else {
+                                    Icon(
+                                        modifier = Modifier.size(24.dp),
+                                        painter = painterResource(R.drawable.cable),
+                                        contentDescription = null
+                                    )
+                                }
                             },
                             onClick = {connectHandler()}
                         ) {
@@ -291,8 +321,14 @@ fun Home(a: MainActivity) {
                             },
                             onClick = {downloadHandler()}
                         ) {
-                            Text(version ?: "未安装", style = MaterialTheme.typography.titleMedium)
-                            Text(if(version == null) {"点按可安装"} else {"启动游戏"}, style = MaterialTheme.typography.bodyMedium)
+                            Text(
+                                text = version ?: "未安装",
+                                style = MaterialTheme.typography.titleMedium
+                            )
+                            Text(
+                                text = if(version == null) {"点按可安装"} else {"启动游戏"},
+                                style = MaterialTheme.typography.bodyMedium
+                            )
                         }
                     }
                     CardButton(
@@ -305,7 +341,10 @@ fun Home(a: MainActivity) {
                         },
                         onClick = {settingHandler()}
                     ) {
-                        Text("设置", style = MaterialTheme.typography.titleMedium)
+                        Text(
+                            text = "设置",
+                            style = MaterialTheme.typography.titleMedium
+                        )
                     }
                 }
             }
@@ -313,6 +352,7 @@ fun Home(a: MainActivity) {
     }
 
     UnsupportedDialog(a)
-    EnvWarningDialog(a)
     VersionBadDialog(a)
+    RootDialog(a)
+    UsbDialog(a)
 }

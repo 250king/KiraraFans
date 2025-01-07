@@ -19,10 +19,6 @@ import java.io.File
 import java.lang.ref.SoftReference
 
 class ConnectorVpnService : VpnService(), ServiceControl {
-    private val isSpecial = Build.VERSION.SDK_INT >= Build.VERSION_CODES.UPSIDE_DOWN_CAKE
-
-    private val app = if (isSpecial) {"com.vmos.pro"} else {"com.aniplex.kirarafantasia"}
-
     private var isRunning = false
 
     private lateinit var fd: ParcelFileDescriptor
@@ -31,7 +27,7 @@ class ConnectorVpnService : VpnService(), ServiceControl {
         System.loadLibrary("hev-socks5-tunnel")
     }
 
-    @Suppress("FunctionName")
+    @Suppress("FunctionName", "unused")
     private external fun TProxyStartService(configPath: String, fd: Int)
 
     @Suppress("FunctionName")
@@ -55,21 +51,33 @@ class ConnectorVpnService : VpnService(), ServiceControl {
     override fun onStartCommand(intent: Intent?, flags: Int, startId: Int): Int {
         ConnectorServiceManager.startV2RayPoint()
         val mainIntent = Intent(this, MainActivity::class.java)
-        mainIntent.flags = Intent.FLAG_ACTIVITY_SINGLE_TOP or Intent.FLAG_ACTIVITY_CLEAR_TOP or Intent.FLAG_ACTIVITY_REORDER_TO_FRONT
-        val pendingIntent = PendingIntent.getActivity(
+        val serviceIntent = Intent()
+        mainIntent.flags = Intent.FLAG_ACTIVITY_SINGLE_TOP or Intent.FLAG_ACTIVITY_REORDER_TO_FRONT
+        serviceIntent.action = Env.SERVICE_CHANNEL
+        serviceIntent.putExtra("action", Env.COPY_URL)
+        val backIntent = PendingIntent.getActivity(
             this,
             0,
             mainIntent,
             PendingIntent.FLAG_UPDATE_CURRENT or PendingIntent.FLAG_IMMUTABLE
         )
-        val notification = NotificationCompat.Builder(this, Env.NOTIFICATION_CHANNEL)
-            .setContentTitle("GNet™ VPN Gateway Connector")
-            .setContentText("已连接至SparkleFantasia CN组织机构专用网络")
-            .setSmallIcon(R.drawable.ic_notification)
-            .setContentIntent(pendingIntent)
-            .setAutoCancel(false)
-            .setOngoing(true)
-            .build()
+        val copyIntent = PendingIntent.getBroadcast(
+            this,
+            0,
+            serviceIntent,
+            PendingIntent.FLAG_UPDATE_CURRENT or PendingIntent.FLAG_IMMUTABLE
+        )
+        val notification = NotificationCompat.Builder(this, Env.NOTIFICATION_CHANNEL).apply {
+            setContentTitle("GNet™ VPN Gateway Connector")
+            setContentText("已连接至SparkleFantasia CN组织机构专用网络")
+            setSmallIcon(R.drawable.ic_notification)
+            setContentIntent(backIntent)
+            setAutoCancel(false)
+            setOngoing(true)
+            if (Env.HEIGHT_ANDROID) {
+                addAction(0, "复制下载链接", copyIntent)
+            }
+        }.build()
         startForeground(1, notification)
         return START_STICKY
     }
@@ -83,15 +91,16 @@ class ConnectorVpnService : VpnService(), ServiceControl {
         if (prepare != null) {
             return
         }
-        val builder = Builder()
-        builder.setMtu(1500)
-        builder.addAddress("26.26.26.1", 30)
-        builder.addRoute("0.0.0.0", 0)
-        builder.addDnsServer("1.1.1.1")
-        builder.setSession(getString(R.string.app_name))
-        builder.addAllowedApplication(app)
-        if (Build.VERSION.SDK_INT >= Build.VERSION_CODES.Q) {
-            builder.setMetered(false)
+        val builder = Builder().apply {
+            setMtu(1500)
+            addAddress("26.26.26.1", 30)
+            addRoute("0.0.0.0", 0)
+            addDnsServer("1.1.1.1")
+            setSession(getString(R.string.app_name))
+            addAllowedApplication(Env.TARGET_PACKAGE)
+            if (Build.VERSION.SDK_INT >= Build.VERSION_CODES.Q) {
+                setMetered(false)
+            }
         }
         try {
             fd.close()
@@ -141,7 +150,8 @@ class ConnectorVpnService : VpnService(), ServiceControl {
                     TProxyStartService(File(dir, "tunnel.yaml").absolutePath, fd.fd)
                 }
             }
-        } catch (e: Exception) {
+        }
+        catch (e: Exception) {
             e.printStackTrace()
             stopService()
         }

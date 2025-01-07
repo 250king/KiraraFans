@@ -34,7 +34,7 @@ import androidx.compose.ui.res.painterResource
 import androidx.compose.ui.unit.dp
 import androidx.lifecycle.lifecycleScope
 import com.king250.kirafan.R
-import com.king250.kirafan.Util
+import com.king250.kirafan.util.ClientUtil
 import com.king250.kirafan.model.view.SettingState
 import com.king250.kirafan.ui.theme.KiraraFansTheme
 import kotlinx.coroutines.CoroutineScope
@@ -113,7 +113,7 @@ fun Main(a: SettingActivity) {
             )
             ListItem(
                 modifier = Modifier.clickable {
-                    Util.open(a, "https://github.com/gd1000m/Kirara-Repo/releases/latest")
+                    ClientUtil.open(a, "https://github.com/gd1000m/Kirara-Repo/releases/latest")
                 },
                 leadingContent = {
                     Icon(

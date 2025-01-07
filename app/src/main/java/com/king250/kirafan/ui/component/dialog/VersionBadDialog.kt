@@ -7,11 +7,12 @@ import androidx.compose.runtime.Composable
 import androidx.compose.runtime.collectAsState
 import androidx.compose.runtime.getValue
 import androidx.compose.ui.unit.sp
+import com.king250.kirafan.Env
 import com.king250.kirafan.ui.activity.MainActivity
 
 @Composable
 fun VersionBadDialog(a: MainActivity) {
-    val isOpen by a.v.isVersionBad.collectAsState()
+    val isOpen by a.v.isBadVersion.collectAsState()
     val version by a.v.version.collectAsState()
 
     if (isOpen) {
@@ -40,7 +41,7 @@ fun VersionBadDialog(a: MainActivity) {
                     TextButton(
                         onClick = {
                             a.v.setIsVersionBad(false)
-                            a.install(a.app)
+                            a.install(Env.TARGET_PACKAGE)
                         }
                     ) {
                         Text("确定")

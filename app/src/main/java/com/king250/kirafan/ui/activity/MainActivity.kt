@@ -25,7 +25,7 @@ import androidx.datastore.preferences.core.stringPreferencesKey
 import androidx.lifecycle.lifecycleScope
 import com.google.gson.JsonParser
 import com.king250.kirafan.Env
-import com.king250.kirafan.Util
+import com.king250.kirafan.util.ClientUtil
 import com.king250.kirafan.dataStore
 import com.king250.kirafan.model.view.MainState
 import com.king250.kirafan.service.ConnectorServiceManager
@@ -52,14 +52,6 @@ class MainActivity : ComponentActivity() {
 
     lateinit var apkAbi: String
 
-    lateinit var content: Unit
-
-    val deviceAbi: String = Build.SUPPORTED_ABIS[0]
-
-    val isSpecial = Build.VERSION.SDK_INT >= Build.VERSION_CODES.UPSIDE_DOWN_CAKE
-
-    val app = if (isSpecial) {"com.vmos.pro"} else {"com.aniplex.kirarafantasia"}
-
     val v: MainState by viewModels()
 
     override fun onCreate(savedInstanceState: Bundle?) {
@@ -71,7 +63,7 @@ class MainActivity : ComponentActivity() {
             "arm" -> "armeabi-v7a"
             else -> File(applicationInfo.nativeLibraryDir).name
         }
-        if (deviceAbi == apkAbi) {
+        if (Env.DEVICE_ABI == apkAbi) {
             vpnPermissionActivity = registerForActivityResult(ActivityResultContracts.StartActivityForResult()) {
                 if (it.resultCode == RESULT_OK) {
                     ConnectorServiceManager.startV2Ray(this)
@@ -108,7 +100,7 @@ class MainActivity : ComponentActivity() {
                         v.showSnackBar("这个是程序运行要用到的，所以还是求求你授权吧~")
                     }
                     else{
-                        Util.toast(this, "由于你已经设置不允许再请求权限了，所以只能你自己设置了（")
+                        ClientUtil.toast(this, "由于你已经设置不允许再请求权限了，所以只能你自己设置了（")
                         enableNotification()
                     }
                 }
@@ -147,8 +139,8 @@ class MainActivity : ComponentActivity() {
     override fun onResume() {
         super.onResume()
         try {
-            val info = packageManager.getPackageInfo(app, 0)
-            v.setVersion(if (isSpecial) {"VMOS ${info.versionName}"} else {info.versionName})
+            val info = packageManager.getPackageInfo(Env.TARGET_PACKAGE, 0)
+            v.setVersion(if (Env.HEIGHT_ANDROID) {"VMOS ${info.versionName}"} else {info.versionName})
         }
         catch (_: Exception) {
             v.setVersion(null)
@@ -175,7 +167,7 @@ class MainActivity : ComponentActivity() {
                             .header("Authorization", "Basic ${Env.BASIC_AUTH}")
                             .post(body)
                             .build()
-                        val response = Util.http(this@MainActivity).newCall(request).execute()
+                        val response = ClientUtil.http(this@MainActivity).newCall(request).execute()
                         if (response.code == 200) {
                             val data = JsonParser.parseString(response.body?.string() ?: "").asJsonObject
                             dataStore.edit {
@@ -236,27 +228,10 @@ class MainActivity : ComponentActivity() {
     }
 
     fun install(packageName: String) {
-        v.setIsDisabledInstall(true)
-        lifecycleScope.launch {
-            try {
-                withContext(Dispatchers.IO) {
-                    val request = Request.Builder().url("${Env.SERVER_API}/1.0/file/aliyun/archive/$packageName.apk").build()
-                    val response = Util.http(this@MainActivity, true).newCall(request).execute()
-                    if (response.code == 200) {
-                        val result = JsonParser.parseString(response.body?.string()).asJsonObject
-                        Util.open(this@MainActivity, result.get("url").asString)
-                    }
-                    else {
-                        logout()
-                    }
-                    response.close()
-                }
-            }
-            catch (e: Exception) {
-                e.printStackTrace()
-                v.showSnackBar("网络好像不太好哦~")
-            }
-            v.setIsDisabledInstall(false)
-        }
+        ClientUtil.open(this, when (packageName) {
+            "com.vmos.openapp" -> "https://vpc.sparklefantasia.com/static/VMOS-2.0.0.apk"
+            "com.aniplex.kirarafantasia" -> "https://vpc.sparklefantasia.com/static/Kirara-3.6.0.apk"
+            else -> ""
+        })
     }
 }

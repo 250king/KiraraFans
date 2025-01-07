@@ -16,8 +16,9 @@ import androidx.compose.ui.unit.dp
 import coil.ImageLoader
 import coil.compose.rememberAsyncImagePainter
 import coil.request.ImageRequest
+import com.king250.kirafan.Env
 import com.king250.kirafan.R
-import com.king250.kirafan.Util
+import com.king250.kirafan.util.ClientUtil
 import com.king250.kirafan.ui.activity.MainActivity
 
 @Composable
@@ -48,13 +49,13 @@ fun AbiWarning(a: MainActivity) {
                 contentDescription = null
             )
             Text(
-                text = "你好像安装了与设备CPU不匹配的ABI变体，你应该安装${a.deviceAbi}而不是当前的${a.apkAbi}",
+                text = "你好像安装了与设备CPU不匹配的ABI变体，你应该安装${Env.DEVICE_ABI}而不是当前的${a.apkAbi}",
                 modifier = Modifier.padding(horizontal = 16.dp)
             )
             TextButton(
                 modifier = Modifier.padding(top = 16.dp),
                 onClick = {
-                    Util.open(a, "https://github.com/gd1000m/Kirara-Repo/releases/latest")
+                    ClientUtil.open(a, "https://github.com/gd1000m/Kirara-Repo/releases/latest")
                 }
             ) {
                 Text("前往下载正确的版本")

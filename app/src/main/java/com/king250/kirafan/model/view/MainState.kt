@@ -16,8 +16,8 @@ import androidx.lifecycle.viewModelScope
 import com.google.gson.JsonParser
 import com.king250.kirafan.BuildConfig
 import com.king250.kirafan.Env
-import com.king250.kirafan.Util
 import com.king250.kirafan.model.data.UserItem
+import com.king250.kirafan.util.ClientUtil
 import kotlinx.coroutines.Dispatchers
 import kotlinx.coroutines.flow.MutableStateFlow
 import kotlinx.coroutines.flow.StateFlow
@@ -37,17 +37,17 @@ class MainState(application: Application) : AndroidViewModel(application) {
 
     private val _isDisabledConnect = MutableStateFlow(false)
 
-    private val _isDisabledInstall = MutableStateFlow(false)
-
     private val _isLoading = MutableStateFlow(true)
 
     private val _isConnected = MutableStateFlow(false)
 
     private val _isUnsupported = MutableStateFlow(false)
 
-    private val _isEnvWarning = MutableStateFlow(false)
+    private val _isRoot = MutableStateFlow(false)
 
-    private val _isVersionBad = MutableStateFlow(false)
+    private val _isUsb = MutableStateFlow(false)
+
+    private val _isBadVersion = MutableStateFlow(false)
 
     private val _isNeedUpdate = MutableStateFlow(false)
 
@@ -61,13 +61,13 @@ class MainState(application: Application) : AndroidViewModel(application) {
 
     val isConnected: StateFlow<Boolean> = _isConnected
 
-    val isDisabledInstall: StateFlow<Boolean> = _isDisabledInstall
-
     val isUnsupported: StateFlow<Boolean> = _isUnsupported
 
-    val isEnvWarning: StateFlow<Boolean> = _isEnvWarning
+    val isRoot: StateFlow<Boolean> = _isRoot
 
-    val isVersionBad: StateFlow<Boolean> = _isVersionBad
+    val isUsb: StateFlow<Boolean> = _isUsb
+
+    val isBadVersion: StateFlow<Boolean> = _isBadVersion
 
     val isNeedUpdate: StateFlow<Boolean> = _isNeedUpdate
 
@@ -137,7 +137,7 @@ class MainState(application: Application) : AndroidViewModel(application) {
         try {
             withContext(Dispatchers.IO) {
                 val request = Request.Builder().url("${Env.SERVER_API}/1.0/me").build()
-                val response = Util.http(context, true).newCall(request).execute()
+                val response = ClientUtil.http(context, true).newCall(request).execute()
                 if (response.code == 200) {
                     val result = JsonParser.parseString(response.body?.string()).asJsonObject
                     _user.value = UserItem(
@@ -158,7 +158,7 @@ class MainState(application: Application) : AndroidViewModel(application) {
         try {
             withContext(Dispatchers.IO) {
                 val request = Request.Builder().url(Env.RELEASE_API).build()
-                val response = Util.http(context).newCall(request).execute()
+                val response = ClientUtil.http(context).newCall(request).execute()
                 if (response.code == 200) {
                     val result = JsonParser.parseString(response.body?.string()).asJsonObject
                     if (result.get("tag_name").asString != BuildConfig.VERSION_NAME) {
@@ -194,20 +194,20 @@ class MainState(application: Application) : AndroidViewModel(application) {
         _isLoading.value = value
     }
 
-    fun setIsDisabledInstall(value: Boolean) {
-        _isDisabledInstall.value = value
-    }
-
     fun setIsUnsupported(value: Boolean) {
         _isUnsupported.value = value
     }
 
-    fun setIsEnvWarning(value: Boolean) {
-        _isEnvWarning.value = value
+    fun setIsRoot(value: Boolean) {
+        _isRoot.value = value
+    }
+
+    fun setIsUsb(value: Boolean) {
+        _isUsb.value = value
     }
 
     fun setIsVersionBad(value: Boolean) {
-        _isVersionBad.value = value
+        _isBadVersion.value = value
     }
 
     fun setSnackBarHostState(value: SnackbarHostState) {
@@ -217,7 +217,9 @@ class MainState(application: Application) : AndroidViewModel(application) {
     fun showSnackBar(message: String) {
         snackBarHostState?.let {
             viewModelScope.launch {
-                it.showSnackbar(message)
+                it.showSnackbar(
+                    message = message
+                )
             }
         }
     }

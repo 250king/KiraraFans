@@ -7,6 +7,7 @@ import androidx.compose.runtime.Composable
 import androidx.compose.runtime.collectAsState
 import androidx.compose.runtime.getValue
 import androidx.compose.ui.unit.sp
+import com.king250.kirafan.Env
 import com.king250.kirafan.ui.activity.MainActivity
 
 @Composable
@@ -31,7 +32,7 @@ fun UnsupportedDialog(a: MainActivity) {
                 TextButton(
                     onClick = {
                         a.v.setIsUnsupported(false)
-                        a.install(a.app)
+                        a.install(Env.TARGET_PACKAGE)
                     }
                 ) {
                     Text("确定")

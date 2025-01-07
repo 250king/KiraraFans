@@ -1,11 +1,16 @@
 <?xml version="1.0" encoding="utf-8"?>
 <layer-list xmlns:android="http://schemas.android.com/apk/res/android">
     <item android:drawable="?android:attr/colorBackground" />
-    <item
-        android:width="288dp"
-        android:height="288dp"
-        android:gravity="center">
-        <inset
-            android:drawable="@drawable/android_splash_icon" />
+    <item android:gravity="center">
+        <vector
+            android:width="288dp"
+            android:height="288dp"
+            android:viewportWidth="288"
+            android:viewportHeight="288">
+            <path
+                android:strokeWidth="1"
+                android:pathData="m140.63,205.28l-41.84,14.86a10.04,10.04 0,0 1,-13.4 -9.74l1.22,-44.38a10.04,10.04 0,0 0,-2.08 -6.41l-27.09,-35.19a10.04,10.04 0,0 1,5.12 -15.75l42.6,-12.55a10.04,10.04 0,0 0,5.44 -3.96l25.11,-36.64a10.04,10.04 0,0 1,16.56 0l25.1,36.64a10.04,10.04 0,0 0,5.45 3.95l42.6,12.56a10.04,10.04 0,0 1,5.12 15.76l-27.09,35.19a10.04,10.04 0,0 0,-2.08 6.41l1.22,44.39a10.04,10.04 0,0 1,-13.4 9.74l-41.84,-14.89a10.04,10.04 0,0 0,-6.73 0l0,0.01z"
+                android:fillColor="#ffdc57"/>
+        </vector>
     </item>
 </layer-list>

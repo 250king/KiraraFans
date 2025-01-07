@@ -20,7 +20,7 @@ import androidx.compose.runtime.Composable
 import androidx.compose.ui.Modifier
 import com.king250.kirafan.model.data.InfoItem
 import com.king250.kirafan.ui.theme.KiraraFansTheme
-import com.king250.kirafan.Util
+import com.king250.kirafan.util.ClientUtil
 
 class InfoActivity : ComponentActivity() {
     override fun onCreate(savedInstanceState: Bundle?) {
@@ -46,7 +46,7 @@ fun Main(a: InfoActivity) {
         InfoItem("指纹", Build.FINGERPRINT),
         InfoItem(
             "USB调试",
-            if (Util.isDebug(a.contentResolver)) {
+            if (ClientUtil.isDebug(a.contentResolver)) {
                 "已打开"
             }
             else {
@@ -55,7 +55,7 @@ fun Main(a: InfoActivity) {
         ),
         InfoItem(
             "Root权限",
-            if (Util.isRooted()) {
+            if (ClientUtil.isRooted()) {
                 "可用"
             }
             else {
@@ -90,7 +90,7 @@ fun Main(a: InfoActivity) {
                     modifier = Modifier.clickable {
                         val cm = a.getSystemService(Context.CLIPBOARD_SERVICE) as ClipboardManager
                         cm.setPrimaryClip(ClipData.newPlainText(null, item.value))
-                        Util.toast(a, "已成功复制到剪切板")
+                        ClientUtil.toast(a, "已成功复制到剪切板")
                     },
                     headlineContent = {
                         Text(item.name)
