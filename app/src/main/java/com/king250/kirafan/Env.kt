@@ -7,23 +7,19 @@ object Env {
 
     val TARGET_PACKAGE = if (HEIGHT_ANDROID) {"com.vmos.openapp"} else {"com.aniplex.kirarafantasia"}
 
-    val DEVICE_ABI: String? = Build.SUPPORTED_ABIS[0]
+    val DEVICE_ABI: String = Build.SUPPORTED_ABIS[0]
 
-    const val SERVER_API = "https://api.250king.top"
-
-    const val KIRARA_API = "https://vpc.sparklefantasia.com/api"
-
-    const val RELEASE_API = "https://api.github.com/repos/gd1000m/Kirara-Repo/releases/latest"
-
-    const val AUTHORIZE_URI = "https://auth.250king.top/auth/authorize"
+    const val AUTHORIZE_URI = "https://account.250king.top/application/o/authorize/"
 
     const val REDIRECT_URI = "kirara://callback/login"
 
-    const val CLIENT_ID = "2e97fea0-78ee-404c-8d32-1639bd79596d"
+    const val CLIENT_ID = "wimwBO8uyk6DODegsIbdMMtm88baBwYqZkyyOVPO"
 
-    const val BASIC_AUTH = "MmU5N2ZlYTAtNzhlZS00MDRjLThkMzItMTYzOWJkNzk1OTZkOlQ3OSFDKXMkcThoKmNQZWEwI0gzbnlEV0tGelhCWWNa"
+    const val RELEASE_API = "https://api.github.com/repos/gd1000m/Kirara-Repo/releases/latest"
 
-    const val PROXY_HOST = "vpc.sparklefantasia.com:443"
+    //const val ENDPOINT_LIST = "https://kirafan.xyz/.well-known/endpoints.json"
+
+    const val PROXY_HOST = "hk.tunnel.kirafan.xyz:443"
 
     const val SERVICE_CHANNEL = "com.king250.kirafan.service.ConnectorVpnService"
 
@@ -38,6 +34,4 @@ object Env {
     const val STOP_SERVICE = 2
 
     const val START_FAILED = 3
-
-    const val COPY_URL = 4
 }

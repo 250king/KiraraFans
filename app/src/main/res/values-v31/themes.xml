@@ -3,7 +3,7 @@
     <style name="Theme.LaunchTheme" parent="Theme.SplashScreen">
         <item name="android:windowSplashScreenBackground">?android:attr/colorBackground</item>
         <item name="android:windowSplashScreenAnimatedIcon">@drawable/android_splash_animate</item>
-        <item name="android:windowSplashScreenAnimationDuration">500</item>
+        <item name="android:windowSplashScreenAnimationDuration">1000</item>
         <item name="postSplashScreenTheme">@style/Theme.KiraraFans</item>
     </style>
 </resources>

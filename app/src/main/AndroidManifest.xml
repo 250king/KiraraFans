@@ -49,27 +49,27 @@
             android:value="1.0" />
 
         <activity
-            android:name=".ui.activity.InfoActivity"
+            android:name=".activity.InfoActivity"
             android:exported="false"
             android:theme="@style/Theme.KiraraFans" />
         <activity
-            android:name=".ui.activity.SettingActivity"
+            android:name=".activity.SettingActivity"
             android:exported="false"
             android:theme="@style/Theme.KiraraFans" />
         <activity
-            android:name=".ui.activity.AboutActivity"
+            android:name=".activity.AboutActivity"
             android:exported="false"
             android:theme="@style/Theme.KiraraFans" />
         <activity
-            android:name=".ui.activity.LicenseActivity"
+            android:name=".activity.LicenseActivity"
             android:exported="false"
             android:theme="@style/Theme.KiraraFans" />
         <activity
-            android:name=".ui.activity.LicenseDetailActivity"
+            android:name=".activity.LicenseDetailActivity"
             android:exported="false"
             android:theme="@style/Theme.KiraraFans" />
         <activity
-            android:name=".ui.activity.MainActivity"
+            android:name=".activity.MainActivity"
             android:launchMode="singleTask"
             android:exported="true"
             android:theme="@style/Theme.LaunchTheme">
@@ -89,7 +89,7 @@
         </activity>
 
         <service
-            android:name=".service.ConnectorVpnService"
+            android:name=".service.ConnectorService"
             android:exported="true"
             android:permission="android.permission.BIND_VPN_SERVICE"
             android:foregroundServiceType="specialUse">
