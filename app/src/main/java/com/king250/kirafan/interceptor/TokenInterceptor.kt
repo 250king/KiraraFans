@@ -27,7 +27,7 @@ class TokenInterceptor(private val context: Context): Interceptor {
                 val preferences = context.dataStore.data.firstOrNull()
                 preferences?.get(stringPreferencesKey("refresh_token")) ?: ""
             }
-            val response = HttpUtil.authApi.refresh(refreshToken = refreshToken).execute()
+            val response = HttpUtil.auth.refresh(refreshToken = refreshToken).execute()
             val token = response.body()
             if (response.isSuccessful && token != null) {
                 accessToken = token.accessToken

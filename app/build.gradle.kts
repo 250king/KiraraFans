@@ -17,8 +17,8 @@ android {
         applicationId = "com.king250.kirafan"
         minSdk = 24
         targetSdk = 35
-        versionCode = 40700
-        versionName = "4.7.0"
+        versionCode = 40800
+        versionName = "4.8.0"
         testInstrumentationRunner = "androidx.test.runner.AndroidJUnitRunner"
         vectorDrawables {
             useSupportLibrary = true

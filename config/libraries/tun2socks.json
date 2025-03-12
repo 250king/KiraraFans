@@ -5,7 +5,7 @@
       "name": "hev"
     }
   ],
-  "artifactVersion": "2.8.0",
+  "artifactVersion": "2.9.1",
   "name": "HevSocks5Tunnel",
   "licenses": [
     "hev"

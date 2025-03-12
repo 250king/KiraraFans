@@ -34,6 +34,7 @@ import com.king250.kirafan.ui.page.HomePage
 import com.king250.kirafan.ui.theme.KiraraFansTheme
 import com.king250.kirafan.util.ClientUtil
 import com.king250.kirafan.util.HttpUtil
+import kotlinx.coroutines.delay
 import kotlinx.coroutines.flow.firstOrNull
 import kotlinx.coroutines.flow.map
 import kotlinx.coroutines.launch
@@ -77,7 +78,8 @@ class MainActivity : ComponentActivity() {
             }
             notificationSettingActivity = registerForActivityResult(ActivityResultContracts.StartActivityForResult()) {
                 if (Build.VERSION.SDK_INT >= Build.VERSION_CODES.TIRAMISU) {
-                    if (ContextCompat.checkSelfPermission(this, Manifest.permission.POST_NOTIFICATIONS) == PackageManager.PERMISSION_DENIED) {
+                    val result = ContextCompat.checkSelfPermission(this, Manifest.permission.POST_NOTIFICATIONS)
+                    if (result == PackageManager.PERMISSION_DENIED) {
                         v.showSnackBar("这个是程序运行要用到的，所以还是求求你授权吧~")
                     }
                     else {
@@ -157,7 +159,7 @@ class MainActivity : ComponentActivity() {
             return
         }
         v.setIsLoading(true)
-        HttpUtil.authApi.login(
+        HttpUtil.auth.login(
             code = intent.data!!.getQueryParameter("code") ?: "",
             codeVerifier = challenge ?: ""
         ).enqueue(object : Callback<Token> {
@@ -225,6 +227,22 @@ class MainActivity : ComponentActivity() {
         v.setUser(null)
         if (show) {
             v.showSnackBar("登录已经失效了（")
+        }
+    }
+
+    fun change(selected: Int) {
+        if (selected != v.selectedEndpoint.value) {
+            v.setIsDisabledConnect(true)
+            if (v.isConnected.value) {
+                val intent = Intent()
+                intent.action = Env.SERVICE_CHANNEL
+                intent.putExtra("action", Env.STOP_SERVICE)
+                sendBroadcast(intent)
+            }
+            lifecycleScope.launch {
+                delay(500)
+                connect()
+            }
         }
     }
 

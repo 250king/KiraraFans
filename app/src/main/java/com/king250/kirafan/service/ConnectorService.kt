@@ -14,9 +14,8 @@ import com.king250.kirafan.R
 import com.king250.kirafan.activity.MainActivity
 import com.king250.kirafan.handler.ConnectorHandler
 import com.king250.kirafan.handler.ServiceHandler
-import kotlinx.coroutines.CoroutineScope
-import kotlinx.coroutines.Dispatchers
-import kotlinx.coroutines.launch
+import com.king250.kirafan.util.HttpUtil
+import kotlinx.coroutines.*
 import java.io.File
 import java.lang.ref.SoftReference
 
@@ -24,6 +23,10 @@ class ConnectorService : VpnService(), ServiceHandler {
     private var isRunning = false
 
     private lateinit var fd: ParcelFileDescriptor
+
+    private lateinit var tunnel: Job
+
+    private lateinit var heartbeat: Job
 
     init {
         System.loadLibrary("hev-socks5-tunnel")
@@ -119,6 +122,8 @@ class ConnectorService : VpnService(), ServiceHandler {
         isRunning = false
         try {
             TProxyStopService()
+            tunnel.cancel()
+            heartbeat.cancel()
         }
         catch (e: Exception) {
             e.printStackTrace()
@@ -135,12 +140,25 @@ class ConnectorService : VpnService(), ServiceHandler {
 
     private fun runTun2socks() {
         try {
-            CoroutineScope(Dispatchers.IO).launch {
+            tunnel = CoroutineScope(Dispatchers.IO).launch {
                 if (isRunning) {
                     val dir = getExternalFilesDir("assets")?.absolutePath
                     TProxyStartService(File(dir, "tunnel.yaml").absolutePath, fd.fd)
                 }
             }
+            heartbeat = CoroutineScope(Dispatchers.IO).launch {
+                while (isRunning) {
+                    try {
+                        HttpUtil.protected.keepSession().execute()
+                    }
+                    catch (e: Exception) {
+                        e.printStackTrace()
+                    }
+                    delay(60000)
+                }
+            }
+            tunnel.start()
+            heartbeat.start()
         }
         catch (e: Exception) {
             e.printStackTrace()

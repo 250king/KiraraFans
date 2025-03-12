@@ -32,10 +32,7 @@ import com.king250.kirafan.activity.MainActivity
 import com.king250.kirafan.activity.SettingActivity
 import com.king250.kirafan.dataStore
 import com.king250.kirafan.ui.component.CardButton
-import com.king250.kirafan.ui.dialog.RootDialog
-import com.king250.kirafan.ui.dialog.UnsupportedDialog
-import com.king250.kirafan.ui.dialog.UsbDialog
-import com.king250.kirafan.ui.dialog.VersionBadDialog
+import com.king250.kirafan.ui.dialog.*
 import com.king250.kirafan.util.ClientUtil
 import com.king250.kirafan.util.HttpUtil
 import com.king250.kirafan.util.StringUtil
@@ -57,9 +54,11 @@ fun HomePage(a: MainActivity) {
     val snackBarHostState = remember { SnackbarHostState() }
     val user by a.v.user.collectAsState()
     val version by a.v.version.collectAsState()
+    val endpoints by a.v.endpoints.collectAsState()
+    val selectedEndpoint by a.v.selectedEndpoint.collectAsState()
     val isConnect by a.v.isConnected.collectAsState()
     val isLoading by a.v.isLoading.collectAsState()
-    val isNeedUpdate by a.v.isNeedUpdate.collectAsState()
+    val isNeedUpdate by a.v.openUpdate.collectAsState()
     val isDisabledConnect by a.v.isDisabledConnect.collectAsState()
     var isDisabledLogin by remember { mutableStateOf(false) }
 
@@ -83,7 +82,7 @@ fun HomePage(a: MainActivity) {
                         val token = a.dataStore.data
                             .map{it[stringPreferencesKey("refresh_token")]}
                             .firstOrNull() ?: ""
-                        HttpUtil.authApi.logout(token).enqueue(object : Callback<Unit> {
+                        HttpUtil.auth.logout(token).enqueue(object : Callback<Unit> {
                             override fun onResponse(p0: Call<Unit>, p1: Response<Unit>) {
                                 a.logout(false)
                                 isDisabledLogin = false
@@ -275,6 +274,22 @@ fun HomePage(a: MainActivity) {
                             icon = {
                                 Icon(
                                     modifier = Modifier.size(24.dp),
+                                    painter = painterResource(R.drawable.lan),
+                                    contentDescription = null
+                                )
+                            },
+                            onClick = {
+                                a.v.setOpenSelect(true)
+                            },
+                            title = "节点",
+                            description = endpoints[selectedEndpoint].name
+                        )
+                    }
+                    AnimatedVisibility(isConnect) {
+                        CardButton(
+                            icon = {
+                                Icon(
+                                    modifier = Modifier.size(24.dp),
                                     painter = painterResource(R.drawable.controller),
                                     contentDescription = null
                                 )
@@ -304,4 +319,5 @@ fun HomePage(a: MainActivity) {
     VersionBadDialog(a)
     RootDialog(a)
     UsbDialog(a)
+    SelectDialog(a)
 }

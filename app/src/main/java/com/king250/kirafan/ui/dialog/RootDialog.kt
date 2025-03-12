@@ -12,7 +12,7 @@ import com.king250.kirafan.activity.MainActivity
 
 @Composable
 fun RootDialog(a: MainActivity) {
-    val isOpen by a.v.isRoot.collectAsState()
+    val isOpen by a.v.openRoot.collectAsState()
 
     if (isOpen) {
         AlertDialog(

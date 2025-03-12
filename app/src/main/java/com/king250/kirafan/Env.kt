@@ -17,10 +17,6 @@ object Env {
 
     const val RELEASE_API = "https://api.github.com/repos/gd1000m/Kirara-Repo/releases/latest"
 
-    //const val ENDPOINT_LIST = "https://kirafan.xyz/.well-known/endpoints.json"
-
-    const val PROXY_HOST = "hk.tunnel.kirafan.xyz:443"
-
     const val SERVICE_CHANNEL = "com.king250.kirafan.service.ConnectorVpnService"
 
     const val NOTIFICATION_CHANNEL = "com.king.kirafan.Notification"

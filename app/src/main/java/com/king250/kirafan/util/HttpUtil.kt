@@ -16,7 +16,7 @@ object HttpUtil {
 
     private val retrofitInstance = Retrofit.Builder().addConverterFactory(GsonConverterFactory.create())
 
-    val authApi: AuthService = retrofitInstance.baseUrl("https://account.250king.top/application/o/")
+    val auth: AuthService = retrofitInstance.baseUrl("https://account.250king.top/application/o/")
         .apply {
             val client = okHttpInstance.addInterceptor(IdentifyInterceptor()).build()
             client(client)
@@ -24,7 +24,7 @@ object HttpUtil {
         .build()
         .create(AuthService::class.java)
 
-    val publicApi: PublicApiService = retrofitInstance.baseUrl("https://kirafan.xyz")
+    val public: PublicApiService = retrofitInstance.baseUrl("https://kirafan.xyz")
         .apply {
             val client = okHttpInstance.build()
             client(client)
@@ -32,14 +32,14 @@ object HttpUtil {
         .build()
         .create(PublicApiService::class.java)
 
-    fun protectedApi(endpoint: String): ProtectedApiService {
-        return retrofitInstance.baseUrl(endpoint)
-            .apply {
-                val client = okHttpInstance.addInterceptor(TokenInterceptor(Application.application)).build()
-                client(client)
-            }
-            .addConverterFactory(GsonConverterFactory.create())
-            .build()
-            .create(ProtectedApiService::class.java)
-    }
+    val protected: ProtectedApiService = retrofitInstance.baseUrl("https://api.kirafan.xyz")
+        .apply {
+            val client = okHttpInstance.addInterceptor(
+                TokenInterceptor(Application.application)
+            ).build()
+            client(client)
+        }
+        .addConverterFactory(GsonConverterFactory.create())
+        .build()
+        .create(ProtectedApiService::class.java)
 }

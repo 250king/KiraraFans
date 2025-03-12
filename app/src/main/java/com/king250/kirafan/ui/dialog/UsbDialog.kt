@@ -14,7 +14,7 @@ import com.king250.kirafan.activity.MainActivity
 
 @Composable
 fun UsbDialog(a: MainActivity) {
-    val isOpen by a.v.isUsb.collectAsState()
+    val isOpen by a.v.openUsb.collectAsState()
 
     if (isOpen) {
         AlertDialog(

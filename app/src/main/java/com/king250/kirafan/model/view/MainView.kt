@@ -15,6 +15,7 @@ import androidx.lifecycle.AndroidViewModel
 import androidx.lifecycle.viewModelScope
 import com.king250.kirafan.BuildConfig
 import com.king250.kirafan.Env
+import com.king250.kirafan.model.data.Endpoint
 import com.king250.kirafan.model.data.Release
 import com.king250.kirafan.model.data.User
 import com.king250.kirafan.util.HttpUtil
@@ -36,6 +37,10 @@ class MainView(application: Application) : AndroidViewModel(application) {
 
     private val _version = MutableStateFlow<String?>(null)
 
+    private val _endpoints = MutableStateFlow(emptyList<Endpoint>())
+
+    private val _selectedEndpoint = MutableStateFlow(0)
+
     private val _isDisabledConnect = MutableStateFlow(false)
 
     private val _isLoading = MutableStateFlow(true)
@@ -44,17 +49,23 @@ class MainView(application: Application) : AndroidViewModel(application) {
 
     private val _isUnsupported = MutableStateFlow(false)
 
-    private val _isRoot = MutableStateFlow(false)
+    private val _openRoot = MutableStateFlow(false)
 
-    private val _isUsb = MutableStateFlow(false)
+    private val _openUsb = MutableStateFlow(false)
 
-    private val _isBadVersion = MutableStateFlow(false)
+    private val _openVersion = MutableStateFlow(false)
 
-    private val _isNeedUpdate = MutableStateFlow(false)
+    private val _openUpdate = MutableStateFlow(false)
+
+    private val _openSelect = MutableStateFlow(false)
 
     val user: StateFlow<User?> = _user
 
     val version: StateFlow<String?> = _version
+
+    val endpoints: StateFlow<List<Endpoint>> = _endpoints
+
+    val selectedEndpoint: StateFlow<Int> = _selectedEndpoint
 
     val isDisabledConnect: StateFlow<Boolean> = _isDisabledConnect
 
@@ -64,13 +75,15 @@ class MainView(application: Application) : AndroidViewModel(application) {
 
     val isUnsupported: StateFlow<Boolean> = _isUnsupported
 
-    val isRoot: StateFlow<Boolean> = _isRoot
+    val openRoot: StateFlow<Boolean> = _openRoot
 
-    val isUsb: StateFlow<Boolean> = _isUsb
+    val openUsb: StateFlow<Boolean> = _openUsb
 
-    val isBadVersion: StateFlow<Boolean> = _isBadVersion
+    val openVersion: StateFlow<Boolean> = _openVersion
 
-    val isNeedUpdate: StateFlow<Boolean> = _isNeedUpdate
+    val openUpdate: StateFlow<Boolean> = _openUpdate
+
+    val openSelect: StateFlow<Boolean> = _openSelect
 
     private val handler = object : BroadcastReceiver() {
         override fun onReceive(p0: Context?, p1: Intent?) {
@@ -130,7 +143,7 @@ class MainView(application: Application) : AndroidViewModel(application) {
     }
 
     fun refresh() {
-        HttpUtil.protectedApi("https://hk.api.kirafan.xyz").getProfile().enqueue(object : Callback<User> {
+        HttpUtil.protected.getProfile().enqueue(object : Callback<User> {
             override fun onResponse(p0: Call<User>, p1: Response<User>) {
                 _user.value = p1.body()
                 _isLoading.value = false
@@ -144,7 +157,7 @@ class MainView(application: Application) : AndroidViewModel(application) {
     }
 
     fun check() {
-        HttpUtil.publicApi.getRelease().enqueue(object : Callback<Release> {
+        HttpUtil.public.getRelease().enqueue(object : Callback<Release> {
             override fun onResponse(p0: Call<Release>, p1: Response<Release>) {
                 if (!p1.isSuccessful) {
                     showSnackBar("无法获得最新版本状态（")
@@ -154,7 +167,7 @@ class MainView(application: Application) : AndroidViewModel(application) {
                 val app = BuildConfig.VERSION_NAME.split(".").map { it.toInt() }
                 app.forEachIndexed { index, number ->
                     if (release[index] > number) {
-                        _isNeedUpdate.value = true
+                        _openUpdate.value = true
                     }
                 }
             }
@@ -187,15 +200,15 @@ class MainView(application: Application) : AndroidViewModel(application) {
     }
 
     fun setIsRoot(value: Boolean) {
-        _isRoot.value = value
+        _openRoot.value = value
     }
 
     fun setIsUsb(value: Boolean) {
-        _isUsb.value = value
+        _openUsb.value = value
     }
 
     fun setIsVersionBad(value: Boolean) {
-        _isBadVersion.value = value
+        _openVersion.value = value
     }
 
     fun setSnackBarHostState(value: SnackbarHostState) {
@@ -210,5 +223,17 @@ class MainView(application: Application) : AndroidViewModel(application) {
                 )
             }
         }
+    }
+
+    fun setEndpoints(value: List<Endpoint>) {
+        _endpoints.value = value
+    }
+
+    fun setSelectedEndpoint(value: Int) {
+        _selectedEndpoint.value = value
+    }
+
+    fun setOpenSelect(value: Boolean) {
+        _openSelect.value = value
     }
 }
