@@ -23,14 +23,11 @@ import com.king250.kirafan.util.ClientUtil
 fun InfoPage(a: InfoActivity) {
     val scrollState = rememberScrollState()
     val items = listOf(
-        Info("厂商", Build.MANUFACTURER),
-        Info("品牌", Build.BRAND),
-        Info("型号", Build.MODEL),
-        Info("基板", Build.BOARD),
-        Info("指纹", Build.FINGERPRINT),
+        Info("Android版本", Build.VERSION.RELEASE),
+        Info("Android API级别", Build.VERSION.SDK_INT.toString()),
         Info(
-            "USB调试",
-            if (ClientUtil.isDebug(a.contentResolver)) {
+            name = "USB调试",
+            value = if (ClientUtil.isDebug(a.contentResolver)) {
                 "已打开"
             }
             else {
@@ -38,16 +35,19 @@ fun InfoPage(a: InfoActivity) {
             }
         ),
         Info(
-            "Root权限",
-            if (ClientUtil.isRooted()) {
+            name = "Root",
+            value = if (ClientUtil.isRooted()) {
                 "可用"
             }
             else {
                 "不可用"
             }
         ),
-        Info("Android版本", Build.VERSION.RELEASE),
-        Info("Android API级别", Build.VERSION.SDK_INT.toString()),
+        Info("厂商", Build.MANUFACTURER),
+        Info("品牌", Build.BRAND),
+        Info("型号", Build.MODEL),
+        Info("基板", Build.BOARD),
+        Info("设备指纹", Build.FINGERPRINT),
     )
 
     Scaffold(

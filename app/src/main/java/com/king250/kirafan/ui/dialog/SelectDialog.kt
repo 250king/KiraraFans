@@ -4,7 +4,6 @@ import androidx.compose.foundation.layout.Column
 import androidx.compose.foundation.layout.Row
 import androidx.compose.foundation.layout.fillMaxWidth
 import androidx.compose.foundation.layout.padding
-import androidx.compose.foundation.selection.selectable
 import androidx.compose.material3.AlertDialog
 import androidx.compose.material3.RadioButton
 import androidx.compose.material3.Text
@@ -19,14 +18,14 @@ import com.king250.kirafan.activity.MainActivity
 
 @Composable
 fun SelectDialog(a: MainActivity) {
-    val endpoints by a.v.endpoints.collectAsState()
-    val selectedEndpoint by a.v.selectedEndpoint.collectAsState()
-    val isOpen by a.v.openSelect.collectAsState()
+    val endpoints by a.s.endpoints.collectAsState()
+    val selectedEndpoint by a.s.selectedEndpoint.collectAsState()
+    val isOpen by a.d.selector.collectAsState()
 
     if (isOpen) {
         AlertDialog(
             onDismissRequest = {
-                a.v.setOpenSelect(false)
+                a.d.openSelector(false)
             },
             title = {
                 Text("选择节点")
@@ -34,7 +33,7 @@ fun SelectDialog(a: MainActivity) {
             confirmButton = {
                 TextButton(
                     onClick = {
-                        a.v.setIsRoot(false)
+                        a.d.openSelector(false)
                     }
                 ) {
                     Text("取消")
@@ -44,22 +43,14 @@ fun SelectDialog(a: MainActivity) {
                 Column(Modifier.fillMaxWidth()) {
                     endpoints.forEachIndexed { index, it ->
                         Row(
-                            modifier = Modifier.fillMaxWidth()
-                                .selectable(
-                                onClick = {
-                                    a.change(index)
-                                    a.v.setSelectedEndpoint(index)
-                                    a.v.setOpenSelect(false)
-                                },
-                                selected = index == selectedEndpoint
-                            ),
+                            modifier = Modifier.fillMaxWidth(),
                             verticalAlignment = Alignment.CenterVertically
                         ) {
                             RadioButton(
                                 onClick = {
                                     a.change(index)
-                                    a.v.setSelectedEndpoint(index)
-                                    a.v.setOpenSelect(false)
+                                    a.s.setSelectedEndpoint(index)
+                                    a.d.openSelector(false)
                                 },
                                 selected = index == selectedEndpoint
                             )

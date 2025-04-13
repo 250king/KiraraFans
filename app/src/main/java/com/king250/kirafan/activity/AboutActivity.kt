@@ -9,8 +9,8 @@ import com.king250.kirafan.ui.theme.KiraraFansTheme
 
 class AboutActivity : ComponentActivity() {
     override fun onCreate(savedInstanceState: Bundle?) {
-        enableEdgeToEdge()
         super.onCreate(savedInstanceState)
+        enableEdgeToEdge()
         setContent {
             KiraraFansTheme {
                 AboutPage(this)

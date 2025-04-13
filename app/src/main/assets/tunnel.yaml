@@ -1,7 +1,7 @@
 socks5:
   port: 10808
   address: 127.0.0.1
-  udp: 'udp'
+  udp: udp
 
 misc:
   log-level: info

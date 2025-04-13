@@ -1,11 +1,8 @@
 package com.king250.kirafan.model.data
 
-import android.os.Parcelable
 import com.google.gson.annotations.SerializedName
-import kotlinx.parcelize.Parcelize
-import java.util.Date
+import java.util.*
 
-@Parcelize
 data class User(
     @SerializedName("sub")
     val id: Int,
@@ -30,4 +27,4 @@ data class User(
 
     @SerializedName("created_at")
     val createdAt: Date
-) : Parcelable
+)

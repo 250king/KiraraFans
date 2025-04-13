@@ -8,16 +8,16 @@ import retrofit2.Call
 import retrofit2.http.*
 
 interface ProtectedApiService {
-    @GET("/endpoint")
+    @GET("terms")
+    fun getTerms(): Call<ResponseBody>
+
+    @GET("endpoint")
     fun getEndpoints() : Call<List<Endpoint>>
 
-    @POST("/session")
+    @POST("session")
     fun changeEndpoint(@Body payload: ChangeOperation) : Call<ResponseBody>
 
-    @OPTIONS("/session")
-    fun keepSession() : Call<Unit>
-
-    @DELETE("/session")
+    @DELETE("session")
     fun revokeSession() : Call<Unit>
 
     @GET

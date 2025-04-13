@@ -11,8 +11,8 @@ import androidx.compose.foundation.rememberScrollState
 import androidx.compose.foundation.shape.CircleShape
 import androidx.compose.foundation.verticalScroll
 import androidx.compose.material.icons.Icons
+import androidx.compose.material.icons.filled.Info
 import androidx.compose.material.icons.filled.Person
-import androidx.compose.material.icons.filled.Settings
 import androidx.compose.material3.*
 import androidx.compose.runtime.*
 import androidx.compose.ui.Alignment
@@ -22,25 +22,26 @@ import androidx.compose.ui.res.painterResource
 import androidx.compose.ui.unit.dp
 import androidx.core.app.NotificationManagerCompat
 import androidx.core.content.ContextCompat
+import androidx.datastore.preferences.core.booleanPreferencesKey
+import androidx.datastore.preferences.core.edit
 import androidx.datastore.preferences.core.stringPreferencesKey
 import coil.compose.AsyncImage
 import coil.request.ImageRequest
 import com.king250.kirafan.Env
 import com.king250.kirafan.R
+import com.king250.kirafan.activity.AboutActivity
 import com.king250.kirafan.activity.InfoActivity
 import com.king250.kirafan.activity.MainActivity
-import com.king250.kirafan.activity.SettingActivity
 import com.king250.kirafan.dataStore
 import com.king250.kirafan.ui.component.CardButton
 import com.king250.kirafan.ui.dialog.*
 import com.king250.kirafan.util.ClientUtil
 import com.king250.kirafan.util.HttpUtil
+import com.king250.kirafan.util.IpcUtil
 import com.king250.kirafan.util.StringUtil
-import kotlinx.coroutines.Dispatchers
 import kotlinx.coroutines.flow.firstOrNull
 import kotlinx.coroutines.flow.map
 import kotlinx.coroutines.launch
-import kotlinx.coroutines.withContext
 import retrofit2.Call
 import retrofit2.Callback
 import retrofit2.Response
@@ -52,18 +53,18 @@ fun HomePage(a: MainActivity) {
     val scrollState = rememberScrollState()
     val scope = rememberCoroutineScope()
     val snackBarHostState = remember { SnackbarHostState() }
-    val user by a.v.user.collectAsState()
-    val version by a.v.version.collectAsState()
-    val endpoints by a.v.endpoints.collectAsState()
-    val selectedEndpoint by a.v.selectedEndpoint.collectAsState()
-    val isConnect by a.v.isConnected.collectAsState()
-    val isLoading by a.v.isLoading.collectAsState()
-    val isNeedUpdate by a.v.openUpdate.collectAsState()
-    val isDisabledConnect by a.v.isDisabledConnect.collectAsState()
-    var isDisabledLogin by remember { mutableStateOf(false) }
+    var disabledLogin by remember { mutableStateOf(false) }
+    val disabledConnect by a.s.disabledConnect.collectAsState()
+    val selectedEndpoint by a.s.selectedEndpoint.collectAsState()
+    val endpoints by a.s.endpoints.collectAsState()
+    val connected by a.s.connected.collectAsState()
+    val version by a.s.version.collectAsState()
+    val loading by a.s.loading.collectAsState()
+    val update by a.s.update.collectAsState()
+    val user by a.s.user.collectAsState()
 
     fun login() {
-        if (!isDisabledLogin) {
+        if (!disabledLogin) {
             if (user == null) {
                 a.challenge = StringUtil.generateCodeVerifier()
                 val redirectUri = URLEncoder.encode(Env.REDIRECT_URI, "utf-8")
@@ -76,26 +77,29 @@ fun HomePage(a: MainActivity) {
                 ClientUtil.open(a, url)
             }
             else {
-                isDisabledLogin = true
+                disabledLogin = true
                 scope.launch {
-                    withContext(Dispatchers.IO) {
-                        val token = a.dataStore.data
-                            .map{it[stringPreferencesKey("refresh_token")]}
-                            .firstOrNull() ?: ""
-                        HttpUtil.auth.logout(token).enqueue(object : Callback<Unit> {
-                            override fun onResponse(p0: Call<Unit>, p1: Response<Unit>) {
-                                a.logout(false)
-                                isDisabledLogin = false
-                            }
-
-                            override fun onFailure(p0: Call<Unit>, p1: Throwable) {
-                                scope.launch {
-                                    snackBarHostState.showSnackbar("网络好像不太好哦~")
-                                    isDisabledLogin = false
+                    val token = a.dataStore.data
+                        .map{it[stringPreferencesKey("refresh_token")]}
+                        .firstOrNull() ?: ""
+                    HttpUtil.auth.logout(token).enqueue(object : Callback<Unit> {
+                        override fun onResponse(p0: Call<Unit>, p1: Response<Unit>) {
+                            scope.launch {
+                                a.dataStore.edit {
+                                    it.remove(booleanPreferencesKey("agreed"))
                                 }
+                                a.logout(false)
+                                disabledLogin = false
                             }
-                        })
-                    }
+                        }
+
+                        override fun onFailure(p0: Call<Unit>, p1: Throwable) {
+                            scope.launch {
+                                snackBarHostState.showSnackbar("网络好像不太好哦~")
+                                disabledLogin = false
+                            }
+                        }
+                    })
                 }
             }
         }
@@ -103,7 +107,7 @@ fun HomePage(a: MainActivity) {
     fun install() {
         if (version == null) {
             if (Env.HEIGHT_ANDROID) {
-                a.v.setIsUnsupported(true)
+                a.d.openSystem(true)
             }
             else {
                 a.install(Env.TARGET_PACKAGE)
@@ -112,13 +116,13 @@ fun HomePage(a: MainActivity) {
         else {
             if (Env.TARGET_PACKAGE == "com.aniplex.kirarafantasia") {
                 if (version != "3.6.0") {
-                    a.v.setIsVersionBad(true)
+                    a.d.openGame(true)
                 }
                 else if (ClientUtil.isRooted()) {
-                    a.v.setIsRoot(true)
+                    a.d.openRoot(true)
                 }
                 else if (ClientUtil.isDebug(a.contentResolver)) {
-                    a.v.setIsUsb(true)
+                    a.d.openUsb(true)
                 }
                 else {
                     val intent = a.packageManager.getLaunchIntentForPackage(Env.TARGET_PACKAGE)
@@ -132,12 +136,9 @@ fun HomePage(a: MainActivity) {
         }
     }
     fun connect() {
-        if (!isDisabledConnect) {
-            if (isConnect) {
-                val intent = Intent()
-                intent.action = Env.SERVICE_CHANNEL
-                intent.putExtra("action", Env.STOP_SERVICE)
-                a.sendBroadcast(intent)
+        if (!disabledConnect) {
+            if (connected) {
+                IpcUtil.toService(a, Env.STOP_SERVICE)
             }
             else {
                 if (Build.VERSION.SDK_INT >= Build.VERSION_CODES.TIRAMISU) {
@@ -160,8 +161,8 @@ fun HomePage(a: MainActivity) {
             }
         }
     }
-    fun setting() {
-        val intent = Intent(a, SettingActivity::class.java)
+    fun about() {
+        val intent = Intent(a, AboutActivity::class.java)
         a.startActivity(intent)
     }
     fun info() {
@@ -169,7 +170,7 @@ fun HomePage(a: MainActivity) {
         a.startActivity(intent)
     }
 
-    a.v.setSnackBarHostState(snackBarHostState)
+    a.s.setSnackBarHostState(snackBarHostState)
 
     Scaffold(
         snackbarHost = {
@@ -183,7 +184,7 @@ fun HomePage(a: MainActivity) {
             )
         }
     ) { innerPadding ->
-        Crossfade(targetState = isLoading, label = "") { loading ->
+        Crossfade(targetState = loading, label = "") { loading ->
             if (loading) {
                 Column(
                     modifier = Modifier.padding(innerPadding).fillMaxSize(),
@@ -195,7 +196,7 @@ fun HomePage(a: MainActivity) {
             }
             else {
                 Column(Modifier.padding(innerPadding).verticalScroll(scrollState)) {
-                    AnimatedVisibility(isNeedUpdate) {
+                    AnimatedVisibility(update) {
                         CardButton(
                             icon = {
                                 Icon(
@@ -253,7 +254,7 @@ fun HomePage(a: MainActivity) {
                     AnimatedVisibility(user != null) {
                         CardButton(
                             icon = {
-                                if (isDisabledConnect) {
+                                if (disabledConnect) {
                                     CircularProgressIndicator()
                                 }
                                 else {
@@ -266,10 +267,10 @@ fun HomePage(a: MainActivity) {
                             },
                             onClick = {connect()},
                             title = "连接至专网",
-                            description = if(isConnect) {"已连接"} else {"未连接"}
+                            description = if(connected) {"已连接"} else {"未连接"}
                         )
                     }
-                    AnimatedVisibility(isConnect) {
+                    AnimatedVisibility(connected) {
                         CardButton(
                             icon = {
                                 Icon(
@@ -279,13 +280,13 @@ fun HomePage(a: MainActivity) {
                                 )
                             },
                             onClick = {
-                                a.v.setOpenSelect(true)
+                                a.d.openSelector(true)
                             },
                             title = "节点",
                             description = endpoints[selectedEndpoint].name
                         )
                     }
-                    AnimatedVisibility(isConnect) {
+                    AnimatedVisibility(connected) {
                         CardButton(
                             icon = {
                                 Icon(
@@ -303,21 +304,20 @@ fun HomePage(a: MainActivity) {
                         icon = {
                             Icon(
                                 modifier = Modifier.size(24.dp),
-                                imageVector = Icons.Default.Settings,
+                                imageVector = Icons.Default.Info,
                                 contentDescription = null
                             )
                         },
-                        onClick = {setting()},
-                        title = "设置"
+                        onClick = {about()},
+                        title = "关于"
                     )
                 }
             }
         }
     }
-
-    UnsupportedDialog(a)
     VersionBadDialog(a)
+    SystemDialog(a)
+    SelectDialog(a)
     RootDialog(a)
     UsbDialog(a)
-    SelectDialog(a)
 }

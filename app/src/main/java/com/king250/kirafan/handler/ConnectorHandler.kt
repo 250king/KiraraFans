@@ -13,6 +13,7 @@ import com.king250.kirafan.model.data.Endpoint
 import com.king250.kirafan.service.ConnectorService
 import com.king250.kirafan.util.ClientUtil
 import com.king250.kirafan.util.HttpUtil
+import com.king250.kirafan.util.IpcUtil
 import go.Seq
 import libv2ray.Libv2ray
 import libv2ray.V2RayPoint
@@ -33,7 +34,7 @@ object ConnectorHandler {
         override fun onReceive(p0: Context?, p1: Intent?) {
             val serviceControl = control?.get() ?: return
             when (p1?.getIntExtra("action", -1)) {
-                Env.STOP_SERVICE, Env.START_FAILED -> {
+                Env.STOP_SERVICE -> {
                     serviceControl.stopService()
                 }
                 else -> {}
@@ -55,24 +56,31 @@ object ConnectorHandler {
         if (v2RayPoint.isRunning) {
             return
         }
-        a.v.showSnackBar("启动中……")
         HttpUtil.protected.getEndpoints().enqueue(object : Callback<List<Endpoint>> {
             override fun onResponse(p0: Call<List<Endpoint>>, p1: Response<List<Endpoint>>) {
-                a.v.setEndpoints(p1.body() ?: emptyList())
-                if (a.v.endpoints.value.isEmpty()) {
-                    a.v.showSnackBar("没有可用节点！")
+                a.s.setEndpoints(p1.body() ?: emptyList())
+                if (a.s.endpoints.value.isEmpty()) {
+                    a.s.showSnackBar("没有可用节点！")
+                    IpcUtil.toUI(a, Env.SERVICE_STOPPED)
                     return
                 }
-                if (a.v.selectedEndpoint.value >= a.v.endpoints.value.size) {
-                    a.v.setSelectedEndpoint(0)
+                if (a.s.selectedEndpoint.value >= a.s.endpoints.value.size) {
+                    a.s.setSelectedEndpoint(0)
                 }
-                val payload = ChangeOperation(a.v.endpoints.value[a.v.selectedEndpoint.value].region)
+                val region = a.s.endpoints.value[a.s.selectedEndpoint.value].region
+                val payload = ChangeOperation(region)
                 HttpUtil.protected.changeEndpoint(payload).enqueue(object : Callback<ResponseBody> {
                     override fun onResponse(p0: Call<ResponseBody>, p1: Response<ResponseBody>) {
                         when (p1.code()) {
                             200 -> {
-                                config = p1.body()?.string() ?: ""
-                                host = "${a.v.endpoints.value[a.v.selectedEndpoint.value].region}.tunnel.kirafan.xyz:443"
+                                val result = p1.body()?.string()
+                                if (result.isNullOrEmpty()) {
+                                    a.s.showSnackBar("配置文件为空")
+                                    IpcUtil.toUI(a, Env.SERVICE_STOPPED)
+                                    return
+                                }
+                                config = result
+                                host = "${region}.tunnel.kirafan.xyz:443"
                                 val intent = Intent(a, ConnectorService::class.java)
                                 if (Build.VERSION.SDK_INT >= Build.VERSION_CODES.O) {
                                     a.startForegroundService(intent)
@@ -82,38 +90,29 @@ object ConnectorHandler {
                                 }
                             }
                             403 -> {
-                                a.logout()
+                                a.s.showSnackBar("凭证已失效，请稍后再试")
                             }
-                            else -> {
-                                a.v.showSnackBar("服务器炸了！")
+                            in 500..599 -> {
+                                a.s.showSnackBar("服务器炸了！")
                             }
                         }
                         if (p1.code() != 200) {
-                            val intent = Intent()
-                            intent.action = Env.UI_CHANNEL
-                            intent.putExtra("action", Env.START_FAILED)
-                            a.sendBroadcast(intent)
+                            IpcUtil.toUI(a, Env.SERVICE_STOPPED)
                         }
                     }
 
                     override fun onFailure(p0: Call<ResponseBody>, p1: Throwable) {
                         p1.printStackTrace()
-                        a.v.showSnackBar("网络好像不太好哦~")
-                        val intent = Intent()
-                        intent.action = Env.UI_CHANNEL
-                        intent.putExtra("action", Env.START_FAILED)
-                        a.sendBroadcast(intent)
+                        a.s.showSnackBar("网络好像不太好哦~")
+                        IpcUtil.toUI(a, Env.SERVICE_STOPPED)
                     }
                 })
             }
 
             override fun onFailure(p0: Call<List<Endpoint>>, p1: Throwable) {
                 p1.printStackTrace()
-                a.v.showSnackBar("网络好像不太好哦~")
-                val intent = Intent()
-                intent.action = Env.UI_CHANNEL
-                intent.putExtra("action", Env.START_FAILED)
-                a.sendBroadcast(intent)
+                a.s.showSnackBar("网络好像不太好哦~")
+                IpcUtil.toUI(a, Env.SERVICE_STOPPED)
             }
         })
     }
@@ -124,26 +123,17 @@ object ConnectorHandler {
             return
         }
         val filter = IntentFilter(Env.SERVICE_CHANNEL)
-        if (Build.VERSION.SDK_INT >= Build.VERSION_CODES.TIRAMISU) {
-            service.registerReceiver(handler, filter, Context.RECEIVER_NOT_EXPORTED)
-        }
-        else {
-            ContextCompat.registerReceiver(service, handler, filter, ContextCompat.RECEIVER_NOT_EXPORTED)
-        }
+        ContextCompat.registerReceiver(service, handler, filter, ContextCompat.RECEIVER_NOT_EXPORTED)
         v2RayPoint.configureFileContent = config
         v2RayPoint.domainName = host
-        val intent = Intent()
-        intent.action = Env.UI_CHANNEL
         try {
             v2RayPoint.runLoop(false)
-            intent.putExtra("action", Env.SERVICE_STARTED)
+            IpcUtil.toUI(service.applicationContext, Env.SERVICE_STARTED)
         }
         catch (e: Exception) {
             e.printStackTrace()
-            v2RayPoint.stopLoop()
-            intent.putExtra("action", Env.SERVICE_STOPPED)
+            control?.get()?.stopService()
         }
-        service.sendBroadcast(intent)
     }
 
     fun stopV2rayPoint() {
@@ -156,10 +146,7 @@ object ConnectorHandler {
                 e.printStackTrace()
             }
         }
-        val intent = Intent()
-        intent.action = Env.UI_CHANNEL
-        intent.putExtra("action", Env.SERVICE_STOPPED)
-        service.sendBroadcast(intent)
+        IpcUtil.toUI(service, Env.SERVICE_STOPPED)
         service.unregisterReceiver(handler)
         HttpUtil.protected.revokeSession().enqueue(object : Callback<Unit> {
             override fun onResponse(p0: Call<Unit>, p1: Response<Unit>) {}

@@ -41,23 +41,13 @@ class MainView(application: Application) : AndroidViewModel(application) {
 
     private val _selectedEndpoint = MutableStateFlow(0)
 
-    private val _isDisabledConnect = MutableStateFlow(false)
+    private val _disabledConnect = MutableStateFlow(false)
 
-    private val _isLoading = MutableStateFlow(true)
+    private val _loading = MutableStateFlow(true)
 
-    private val _isConnected = MutableStateFlow(false)
+    private val _connected = MutableStateFlow(false)
 
-    private val _isUnsupported = MutableStateFlow(false)
-
-    private val _openRoot = MutableStateFlow(false)
-
-    private val _openUsb = MutableStateFlow(false)
-
-    private val _openVersion = MutableStateFlow(false)
-
-    private val _openUpdate = MutableStateFlow(false)
-
-    private val _openSelect = MutableStateFlow(false)
+    private val _update = MutableStateFlow(false)
 
     val user: StateFlow<User?> = _user
 
@@ -67,36 +57,26 @@ class MainView(application: Application) : AndroidViewModel(application) {
 
     val selectedEndpoint: StateFlow<Int> = _selectedEndpoint
 
-    val isDisabledConnect: StateFlow<Boolean> = _isDisabledConnect
+    val disabledConnect: StateFlow<Boolean> = _disabledConnect
 
-    val isLoading: StateFlow<Boolean> = _isLoading
+    val loading: StateFlow<Boolean> = _loading
 
-    val isConnected: StateFlow<Boolean> = _isConnected
+    val connected: StateFlow<Boolean> = _connected
 
-    val isUnsupported: StateFlow<Boolean> = _isUnsupported
-
-    val openRoot: StateFlow<Boolean> = _openRoot
-
-    val openUsb: StateFlow<Boolean> = _openUsb
-
-    val openVersion: StateFlow<Boolean> = _openVersion
-
-    val openUpdate: StateFlow<Boolean> = _openUpdate
-
-    val openSelect: StateFlow<Boolean> = _openSelect
+    val update: StateFlow<Boolean> = _update
 
     private val handler = object : BroadcastReceiver() {
         override fun onReceive(p0: Context?, p1: Intent?) {
             when (p1?.getIntExtra("action", -1)) {
                 Env.SERVICE_STARTED -> {
-                    _isConnected.value = true
+                    _connected.value = true
                 }
                 Env.SERVICE_STOPPED -> {
-                    _isConnected.value = false
+                    _connected.value = false
                 }
                 else -> {}
             }
-            _isDisabledConnect.value = false
+            _disabledConnect.value = false
         }
     }
 
@@ -107,6 +87,7 @@ class MainView(application: Application) : AndroidViewModel(application) {
 
     suspend fun init() {
         val filter = IntentFilter(Env.UI_CHANNEL)
+        val context = getApplication<Application>()
         val assets = getApplication<Application>().applicationContext.assets
         val dir = getApplication<Application>().getExternalFilesDir("assets")?.absolutePath
         assets.list("")?.forEach {
@@ -124,7 +105,6 @@ class MainView(application: Application) : AndroidViewModel(application) {
             }
         }
         if (Build.VERSION.SDK_INT >= Build.VERSION_CODES.O) {
-            val context = getApplication<Application>().applicationContext
             val notificationManager = getSystemService(context, NotificationManager::class.java)
             val channel = NotificationChannel(
                 Env.NOTIFICATION_CHANNEL,
@@ -134,24 +114,19 @@ class MainView(application: Application) : AndroidViewModel(application) {
             channel.description = "显示连接状态"
             notificationManager?.createNotificationChannel(channel)
         }
-        ContextCompat.registerReceiver(
-            getApplication(),
-            handler,
-            filter,
-            ContextCompat.RECEIVER_NOT_EXPORTED
-        )
+        ContextCompat.registerReceiver(context, handler, filter, ContextCompat.RECEIVER_NOT_EXPORTED)
     }
 
     fun refresh() {
         HttpUtil.protected.getProfile().enqueue(object : Callback<User> {
             override fun onResponse(p0: Call<User>, p1: Response<User>) {
                 _user.value = p1.body()
-                _isLoading.value = false
+                _loading.value = false
             }
 
             override fun onFailure(p0: Call<User>, p1: Throwable) {
                 p1.printStackTrace()
-                _isLoading.value = false
+                _loading.value = false
             }
         })
     }
@@ -167,7 +142,7 @@ class MainView(application: Application) : AndroidViewModel(application) {
                 val app = BuildConfig.VERSION_NAME.split(".").map { it.toInt() }
                 app.forEachIndexed { index, number ->
                     if (release[index] > number) {
-                        _openUpdate.value = true
+                        _update.value = true
                     }
                 }
             }
@@ -187,28 +162,20 @@ class MainView(application: Application) : AndroidViewModel(application) {
         _version.value = value
     }
 
-    fun setIsDisabledConnect(value: Boolean) {
-        _isDisabledConnect.value = value
+    fun setDisabledConnect(value: Boolean) {
+        _disabledConnect.value = value
     }
 
-    fun setIsLoading(value: Boolean) {
-        _isLoading.value = value
+    fun setEndpoints(value: List<Endpoint>) {
+        _endpoints.value = value
     }
 
-    fun setIsUnsupported(value: Boolean) {
-        _isUnsupported.value = value
+    fun setSelectedEndpoint(value: Int) {
+        _selectedEndpoint.value = value
     }
 
-    fun setIsRoot(value: Boolean) {
-        _openRoot.value = value
-    }
-
-    fun setIsUsb(value: Boolean) {
-        _openUsb.value = value
-    }
-
-    fun setIsVersionBad(value: Boolean) {
-        _openVersion.value = value
+    fun setLoading(value: Boolean) {
+        _loading.value = value
     }
 
     fun setSnackBarHostState(value: SnackbarHostState) {
@@ -223,17 +190,5 @@ class MainView(application: Application) : AndroidViewModel(application) {
                 )
             }
         }
-    }
-
-    fun setEndpoints(value: List<Endpoint>) {
-        _endpoints.value = value
-    }
-
-    fun setSelectedEndpoint(value: Int) {
-        _selectedEndpoint.value = value
-    }
-
-    fun setOpenSelect(value: Boolean) {
-        _openSelect.value = value
     }
 }

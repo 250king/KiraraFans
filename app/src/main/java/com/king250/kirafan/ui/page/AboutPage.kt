@@ -26,6 +26,7 @@ import com.king250.kirafan.model.data.About
 import com.king250.kirafan.model.data.Developer
 import com.king250.kirafan.activity.AboutActivity
 import com.king250.kirafan.activity.LicenseActivity
+import com.king250.kirafan.activity.TermsActivity
 import com.king250.kirafan.util.ClientUtil
 
 @OptIn(ExperimentalMaterial3Api::class)
@@ -42,8 +43,12 @@ fun AboutPage(a: AboutActivity) {
         About("服务器源代码") {
             ClientUtil.open(a, "https://gitlab.com/kirafan/sparkle/server")
         },
-        About("使用须知") {
-            // TODO
+        About("获得最新版本") {
+            ClientUtil.open(a, "https://github.com/gd1000m/Kirara-Repo/releases/latest")
+        },
+        About("使用条款") {
+            val intent = Intent(a, TermsActivity::class.java)
+            a.startActivity(intent)
         },
         About("开源许可证") {
             val intent = Intent(a, LicenseActivity::class.java)
@@ -83,7 +88,7 @@ fun AboutPage(a: AboutActivity) {
                     painter = rememberAsyncImagePainter(
                         model = ImageRequest
                             .Builder(a)
-                            .data(R.drawable.ic_launcher_round)
+                            .data(R.drawable.icon)
                             .apply {
                                 crossfade(true)
                             }

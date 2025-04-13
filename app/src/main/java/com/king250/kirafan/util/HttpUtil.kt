@@ -24,7 +24,7 @@ object HttpUtil {
         .build()
         .create(AuthService::class.java)
 
-    val public: PublicApiService = retrofitInstance.baseUrl("https://kirafan.xyz")
+    val public: PublicApiService = retrofitInstance.baseUrl("https://kirafan.xyz/")
         .apply {
             val client = okHttpInstance.build()
             client(client)
@@ -32,7 +32,7 @@ object HttpUtil {
         .build()
         .create(PublicApiService::class.java)
 
-    val protected: ProtectedApiService = retrofitInstance.baseUrl("https://api.kirafan.xyz")
+    val protected: ProtectedApiService = retrofitInstance.baseUrl("https://api.kirafan.xyz/v1.0/")
         .apply {
             val client = okHttpInstance.addInterceptor(
                 TokenInterceptor(Application.application)

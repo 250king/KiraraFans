@@ -31,14 +31,13 @@ object ClientUtil {
     @SuppressLint("PrivateApi")
     fun isDebug(contentResolver: ContentResolver): Boolean {
         try {
-            val result = Class
-                .forName("android.os.SystemProperties")
+            val result = Class.forName("android.os.SystemProperties")
                 .getMethod("get", String.Companion::class.java)
                 .invoke(null, "init.svc.adbd") as String
             return result == "running"
         }
         catch (_: Exception) {
-            return Settings.Secure.getInt(contentResolver, Settings.Global.ADB_ENABLED, 0) == 1
+            return Settings.Global.getInt(contentResolver, Settings.Global.ADB_ENABLED, 0) != 0
         }
     }
 

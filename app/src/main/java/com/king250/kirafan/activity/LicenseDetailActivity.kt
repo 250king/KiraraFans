@@ -9,8 +9,8 @@ import com.king250.kirafan.ui.theme.KiraraFansTheme
 
 class LicenseDetailActivity : ComponentActivity() {
     override fun onCreate(savedInstanceState: Bundle?) {
-        enableEdgeToEdge()
         super.onCreate(savedInstanceState)
+        enableEdgeToEdge()
         setContent {
             KiraraFansTheme {
                 LicenseDetailPage(this)

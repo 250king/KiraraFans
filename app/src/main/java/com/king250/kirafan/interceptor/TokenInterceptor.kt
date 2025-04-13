@@ -1,6 +1,7 @@
 package com.king250.kirafan.interceptor
 
 import android.content.Context
+import androidx.datastore.preferences.core.booleanPreferencesKey
 import androidx.datastore.preferences.core.edit
 import androidx.datastore.preferences.core.longPreferencesKey
 import androidx.datastore.preferences.core.stringPreferencesKey
@@ -42,6 +43,7 @@ class TokenInterceptor(private val context: Context): Interceptor {
             else {
                 runBlocking {
                     context.dataStore.edit {
+                        it.remove(booleanPreferencesKey("agreed"))
                         it.remove(stringPreferencesKey("access_token"))
                         it.remove(stringPreferencesKey("refresh_token"))
                         it.remove(longPreferencesKey("expires_in"))

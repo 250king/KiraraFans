@@ -1,12 +1,9 @@
-import io.sentry.android.gradle.extensions.InstrumentationFeature
-import io.sentry.android.gradle.instrumentation.logcat.LogcatLevel
-
 plugins {
     id("com.android.application")
     id("org.jetbrains.kotlin.android")
     id("com.mikepenz.aboutlibraries.plugin")
     id("io.sentry.android.gradle")
-    id("kotlin-parcelize")
+    id("org.jetbrains.kotlin.plugin.compose")
 }
 
 android {
@@ -17,8 +14,8 @@ android {
         applicationId = "com.king250.kirafan"
         minSdk = 24
         targetSdk = 35
-        versionCode = 40800
-        versionName = "4.8.0"
+        versionCode = 40802
+        versionName = "4.8.3"
         testInstrumentationRunner = "androidx.test.runner.AndroidJUnitRunner"
         vectorDrawables {
             useSupportLibrary = true
@@ -84,42 +81,6 @@ android {
             excludes += "/META-INF/{AL2.0,LGPL2.1}"
         }
     }
-
-    sentry {
-        debug = false
-        org = "transmedia-studio"
-        projectName = "android"
-        authToken = System.getenv("SENTRY_AUTH_TOKEN")
-        url = null
-        includeProguardMapping = true
-        autoUploadProguardMapping = true
-        dexguardEnabled = false
-        uploadNativeSymbols = false
-        autoUploadNativeSymbols = true
-        includeNativeSources = false
-        includeSourceContext = false
-        additionalSourceDirsForSourceContext = emptySet()
-        tracingInstrumentation {
-            enabled = true
-            features = setOf(
-                InstrumentationFeature.DATABASE,
-                InstrumentationFeature.FILE_IO,
-                InstrumentationFeature.OKHTTP,
-                InstrumentationFeature.COMPOSE
-            )
-            logcat {
-                enabled = true
-                minLevel = LogcatLevel.WARNING
-            }
-            excludes = emptySet()
-        }
-        autoInstallation {
-            enabled = true
-            sentryVersion = "7.14.0"
-        }
-        includeDependenciesReport = true
-        telemetry = true
-    }
 }
 
 aboutLibraries {
@@ -128,26 +89,29 @@ aboutLibraries {
 
 dependencies {
     implementation(fileTree(mapOf("dir" to "libs", "include" to listOf("*.aar", "*.jar"))))
-    implementation(platform("androidx.compose:compose-bom:2025.02.00"))
+    implementation(platform("androidx.compose:compose-bom:2025.04.00"))
     implementation("androidx.activity:activity-compose:1.10.1")
     implementation("androidx.browser:browser:1.8.0")
-    implementation("androidx.core:core-ktx:1.15.0")
+    implementation("androidx.core:core-ktx:1.16.0")
     implementation("androidx.core:core-splashscreen:1.0.1")
     implementation("androidx.compose.ui:ui")
     implementation("androidx.compose.material3:material3")
-    implementation("androidx.datastore:datastore-preferences:1.1.3")
+    implementation("androidx.datastore:datastore-preferences:1.1.4")
+    implementation("com.github.jeziellago:compose-markdown:0.5.7")
     implementation("com.mikepenz:aboutlibraries-core:11.2.3")
     implementation("com.mikepenz:aboutlibraries-compose-m3:11.2.3")
     implementation("com.squareup.okhttp3:okhttp:4.12.0")
-    implementation("com.squareup.okhttp3:okhttp-dnsoverhttps:4.12.0")
     implementation("com.squareup.retrofit2:retrofit:2.9.0")
     implementation("com.squareup.retrofit2:converter-gson:2.9.0")
     implementation("io.coil-kt:coil-compose:2.7.0")
     implementation(kotlin("script-runtime"))
+    implementation("androidx.lifecycle:lifecycle-runtime-ktx:2.8.7")
+    implementation("androidx.compose.ui:ui-graphics")
     testImplementation("junit:junit:4.13.2")
-    androidTestImplementation(platform("androidx.compose:compose-bom:2025.02.00"))
+    androidTestImplementation(platform("androidx.compose:compose-bom:2025.04.00"))
     androidTestImplementation("androidx.test.ext:junit:1.2.1")
     androidTestImplementation("androidx.test.espresso:espresso-core:3.6.1")
+    androidTestImplementation("androidx.compose.ui:ui-test-junit4")
     debugImplementation("androidx.compose.ui:ui-tooling")
     debugImplementation("androidx.compose.ui:ui-test-manifest")
 }

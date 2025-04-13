@@ -20,6 +20,7 @@ import androidx.core.app.NotificationManagerCompat
 import androidx.core.content.ContextCompat
 import androidx.core.splashscreen.SplashScreen
 import androidx.core.splashscreen.SplashScreen.Companion.installSplashScreen
+import androidx.datastore.preferences.core.booleanPreferencesKey
 import androidx.datastore.preferences.core.edit
 import androidx.datastore.preferences.core.longPreferencesKey
 import androidx.datastore.preferences.core.stringPreferencesKey
@@ -28,12 +29,14 @@ import com.king250.kirafan.Env
 import com.king250.kirafan.dataStore
 import com.king250.kirafan.handler.ConnectorHandler
 import com.king250.kirafan.model.data.Token
+import com.king250.kirafan.model.view.DialogView
 import com.king250.kirafan.model.view.MainView
 import com.king250.kirafan.ui.page.AbiWarning
 import com.king250.kirafan.ui.page.HomePage
 import com.king250.kirafan.ui.theme.KiraraFansTheme
 import com.king250.kirafan.util.ClientUtil
 import com.king250.kirafan.util.HttpUtil
+import com.king250.kirafan.util.IpcUtil
 import kotlinx.coroutines.delay
 import kotlinx.coroutines.flow.firstOrNull
 import kotlinx.coroutines.flow.map
@@ -46,6 +49,8 @@ import java.io.File
 class MainActivity : ComponentActivity() {
     private lateinit var compatSplashScreen: SplashScreen
 
+    private lateinit var termsActivity: ActivityResultLauncher<Intent>
+
     private lateinit var vpnPermissionActivity: ActivityResultLauncher<Intent>
 
     private lateinit var notificationSettingActivity: ActivityResultLauncher<Intent>
@@ -56,12 +61,14 @@ class MainActivity : ComponentActivity() {
 
     var challenge: String? = null
 
-    val v: MainView by viewModels()
+    val s: MainView by viewModels()
+
+    val d: DialogView by viewModels()
 
     override fun onCreate(savedInstanceState: Bundle?) {
         compatSplashScreen = installSplashScreen()
-        enableEdgeToEdge()
         super.onCreate(savedInstanceState)
+        enableEdgeToEdge()
         apkAbi = when (File(applicationInfo.nativeLibraryDir).name) {
             "arm64" -> "arm64-v8a"
             "arm" -> "armeabi-v7a"
@@ -70,17 +77,17 @@ class MainActivity : ComponentActivity() {
         if (Env.DEVICE_ABI == apkAbi) {
             vpnPermissionActivity = registerForActivityResult(ActivityResultContracts.StartActivityForResult()) {
                 if (it.resultCode == RESULT_OK) {
-                    ConnectorHandler.startV2Ray(this)
+                    connect()
                 }
                 else {
-                    v.showSnackBar("这个是程序运行要用到的，所以还是求求你授权吧~")
+                    s.showSnackBar("这个是程序运行要用到的，所以还是求求你授权吧~")
                 }
             }
             notificationSettingActivity = registerForActivityResult(ActivityResultContracts.StartActivityForResult()) {
                 if (Build.VERSION.SDK_INT >= Build.VERSION_CODES.TIRAMISU) {
                     val result = ContextCompat.checkSelfPermission(this, Manifest.permission.POST_NOTIFICATIONS)
                     if (result == PackageManager.PERMISSION_DENIED) {
-                        v.showSnackBar("这个是程序运行要用到的，所以还是求求你授权吧~")
+                        s.showSnackBar("这个是程序运行要用到的，所以还是求求你授权吧~")
                     }
                     else {
                         connect()
@@ -89,7 +96,7 @@ class MainActivity : ComponentActivity() {
                 else {
                     val enabled = NotificationManagerCompat.from(this).areNotificationsEnabled()
                     if (!enabled) {
-                        v.showSnackBar("这个是程序运行要用到的，所以还是求求你授权吧~")
+                        s.showSnackBar("这个是程序运行要用到的，所以还是求求你授权吧~")
                     }
                     else {
                         connect()
@@ -102,12 +109,25 @@ class MainActivity : ComponentActivity() {
                 }
                 else {
                     if (ActivityCompat.shouldShowRequestPermissionRationale(this, Manifest.permission.POST_NOTIFICATIONS)) {
-                        v.showSnackBar("这个是程序运行要用到的，所以还是求求你授权吧~")
+                        s.showSnackBar("这个是程序运行要用到的，所以还是求求你授权吧~")
                     }
                     else{
                         ClientUtil.toast(this, "由于你已经设置不允许再请求权限了，所以只能你自己设置了（")
                         enableNotification()
                     }
+                }
+            }
+            termsActivity = registerForActivityResult(ActivityResultContracts.StartActivityForResult()) {
+                if (it.resultCode == RESULT_OK) {
+                    lifecycleScope.launch {
+                        dataStore.edit { preferences ->
+                            preferences[booleanPreferencesKey("agreed")] = true
+                        }
+                        connect()
+                    }
+                }
+                else {
+                    s.showSnackBar("只有认真阅读且同意了才能玩~")
                 }
             }
             onBackPressedDispatcher.addCallback(this) {
@@ -119,16 +139,16 @@ class MainActivity : ComponentActivity() {
                 }
             }
             lifecycleScope.launch {
-                v.init()
+                s.init()
                 val token = dataStore.data.map{it[stringPreferencesKey("access_token")]}.firstOrNull()
                 compatSplashScreen.setKeepOnScreenCondition {false}
                 if (token == null) {
-                    v.setIsLoading(false)
+                    s.setLoading(false)
                 }
                 else {
-                    v.refresh()
+                    s.refresh()
                 }
-                v.check()
+                s.check()
             }
         }
         else {
@@ -145,32 +165,32 @@ class MainActivity : ComponentActivity() {
         super.onResume()
         try {
             val info = packageManager.getPackageInfo(Env.TARGET_PACKAGE, 0)
-            v.setVersion(if (Env.HEIGHT_ANDROID) {"VMOS ${info.versionName}"} else {info.versionName})
+            s.setVersion(if (Env.HEIGHT_ANDROID) {"VMOS ${info.versionName}"} else {info.versionName})
         }
         catch (_: Exception) {
-            v.setVersion(null)
+            s.setVersion(null)
         }
     }
 
     override fun onNewIntent(intent: Intent) {
         super.onNewIntent(intent)
         if (intent.data == null && intent.action != Intent.ACTION_VIEW) {
-            v.setIsLoading(false)
+            s.setLoading(false)
             return
         }
-        v.setIsLoading(true)
+        s.setLoading(true)
         HttpUtil.auth.login(
             code = intent.data!!.getQueryParameter("code") ?: "",
             codeVerifier = challenge ?: ""
         ).enqueue(object : Callback<Token> {
             override fun onResponse(p0: Call<Token>, p1: Response<Token>) {
                 if (!p1.isSuccessful) {
-                    v.setIsLoading(false)
+                    s.setLoading(false)
                     return
                 }
                 val token = p1.body()
                 if (token == null) {
-                    v.setIsLoading(false)
+                    s.setLoading(false)
                     return
                 }
                 lifecycleScope.launch {
@@ -179,14 +199,14 @@ class MainActivity : ComponentActivity() {
                         it[stringPreferencesKey("refresh_token")] = token.refreshToken
                         it[longPreferencesKey("expires_in")] = System.currentTimeMillis() / 1000 + token.expiresIn
                     }
-                    v.refresh()
+                    s.refresh()
                 }
             }
 
             override fun onFailure(p0: Call<Token>, p1: Throwable) {
                 p1.printStackTrace()
-                v.setIsLoading(false)
-                v.showSnackBar("网络好像不太好哦~")
+                s.setLoading(false)
+                s.showSnackBar("网络好像不太好哦~")
             }
         })
     }
@@ -211,8 +231,18 @@ class MainActivity : ComponentActivity() {
     fun connect() {
         val intent = VpnService.prepare(this)
         if (intent == null) {
-            v.setIsDisabledConnect(true)
-            ConnectorHandler.startV2Ray(this)
+            lifecycleScope.launch {
+                val agreed = dataStore.data.firstOrNull()?.get(booleanPreferencesKey("agreed"))
+                if (agreed == true) {
+                    s.setDisabledConnect(true)
+                    ConnectorHandler.startV2Ray(this@MainActivity)
+                }
+                else {
+                    val intent = Intent(this@MainActivity, TermsActivity::class.java)
+                    intent.putExtra("show", true)
+                    termsActivity.launch(intent)
+                }
+            }
         }
         else {
             vpnPermissionActivity.launch(intent)
@@ -220,25 +250,17 @@ class MainActivity : ComponentActivity() {
     }
 
     fun logout(show: Boolean = true) {
-        val intent = Intent()
-        intent.action = Env.SERVICE_CHANNEL
-        intent.putExtra("action", Env.STOP_SERVICE)
-        sendBroadcast(intent)
-        v.setUser(null)
+        IpcUtil.toService(this, Env.STOP_SERVICE)
+        s.setUser(null)
         if (show) {
-            v.showSnackBar("登录已经失效了（")
+            s.showSnackBar("登录已经失效了（")
         }
     }
 
     fun change(selected: Int) {
-        if (selected != v.selectedEndpoint.value) {
-            v.setIsDisabledConnect(true)
-            if (v.isConnected.value) {
-                val intent = Intent()
-                intent.action = Env.SERVICE_CHANNEL
-                intent.putExtra("action", Env.STOP_SERVICE)
-                sendBroadcast(intent)
-            }
+        if (selected != s.selectedEndpoint.value) {
+            s.setDisabledConnect(true)
+            IpcUtil.toService(this, Env.STOP_SERVICE)
             lifecycleScope.launch {
                 delay(500)
                 connect()
@@ -247,10 +269,6 @@ class MainActivity : ComponentActivity() {
     }
 
     fun install(packageName: String) {
-        ClientUtil.open(this, when (packageName) {
-            "com.vmos.openapp" -> "https://vpc.sparklefantasia.com/static/VMOS-2.0.0.apk"
-            "com.aniplex.kirarafantasia" -> "https://vpc.sparklefantasia.com/static/Kirara-3.6.0.apk"
-            else -> ""
-        })
+        ClientUtil.open(this, "https://api.kirafan.xyz/download/$packageName")
     }
 }

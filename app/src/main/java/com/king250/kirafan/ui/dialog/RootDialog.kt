@@ -12,12 +12,12 @@ import com.king250.kirafan.activity.MainActivity
 
 @Composable
 fun RootDialog(a: MainActivity) {
-    val isOpen by a.v.openRoot.collectAsState()
+    val isOpen by a.d.root.collectAsState()
 
     if (isOpen) {
         AlertDialog(
             onDismissRequest = {
-                a.v.setIsRoot(false)
+                a.d.openRoot(false)
             },
             title = {
                 Text("提示")
@@ -31,7 +31,7 @@ fun RootDialog(a: MainActivity) {
             confirmButton = {
                 TextButton(
                     onClick = {
-                        a.v.setIsRoot(false)
+                        a.d.openRoot(false)
                     }
                 ) {
                     Text("退出")
@@ -42,7 +42,7 @@ fun RootDialog(a: MainActivity) {
                     onClick = {
                         val intent = a.packageManager.getLaunchIntentForPackage(Env.TARGET_PACKAGE)
                         a.startActivity(intent)
-                        a.v.setIsRoot(false)
+                        a.d.openRoot(false)
                     }
                 ) {
                     Text("继续游玩")

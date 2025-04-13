@@ -14,12 +14,12 @@ import com.king250.kirafan.activity.MainActivity
 
 @Composable
 fun UsbDialog(a: MainActivity) {
-    val isOpen by a.v.openUsb.collectAsState()
+    val isOpen by a.d.usb.collectAsState()
 
     if (isOpen) {
         AlertDialog(
             onDismissRequest = {
-                a.v.setIsUsb(false)
+                a.d.openUsb(false)
             },
             title = {
                 Text("提示")
@@ -35,7 +35,7 @@ fun UsbDialog(a: MainActivity) {
                     onClick = {
                         val intent = Intent(Settings.ACTION_APPLICATION_DEVELOPMENT_SETTINGS)
                         a.startActivity(intent)
-                        a.v.setIsUsb(false)
+                        a.d.openUsb(false)
                     }
                 ) {
                     Text("关闭USB调试")
@@ -46,7 +46,7 @@ fun UsbDialog(a: MainActivity) {
                     onClick = {
                         val intent = a.packageManager.getLaunchIntentForPackage(Env.TARGET_PACKAGE)
                         a.startActivity(intent)
-                        a.v.setIsUsb(false)
+                        a.d.openUsb(false)
                     }
                 ) {
                     Text("继续游玩")
