@@ -36,7 +36,7 @@ import com.king250.kirafan.dataStore
 import com.king250.kirafan.ui.component.CardButton
 import com.king250.kirafan.ui.dialog.*
 import com.king250.kirafan.util.ClientUtil
-import com.king250.kirafan.util.HttpUtil
+import com.king250.kirafan.api.HttpApi
 import com.king250.kirafan.util.IpcUtil
 import com.king250.kirafan.util.StringUtil
 import kotlinx.coroutines.flow.firstOrNull
@@ -54,14 +54,14 @@ fun HomePage(a: MainActivity) {
     val scope = rememberCoroutineScope()
     val snackBarHostState = remember { SnackbarHostState() }
     var disabledLogin by remember { mutableStateOf(false) }
-    val disabledConnect by a.s.disabledConnect.collectAsState()
-    val selectedEndpoint by a.s.selectedEndpoint.collectAsState()
-    val endpoints by a.s.endpoints.collectAsState()
-    val connected by a.s.connected.collectAsState()
-    val version by a.s.version.collectAsState()
-    val loading by a.s.loading.collectAsState()
-    val update by a.s.update.collectAsState()
-    val user by a.s.user.collectAsState()
+    val disabledConnect by a.m.disabledConnect.collectAsState()
+    val selectedEndpoint by a.m.selectedEndpoint.collectAsState()
+    val endpoints by a.m.endpoints.collectAsState()
+    val connected by a.m.connected.collectAsState()
+    val version by a.m.version.collectAsState()
+    val loading by a.m.loading.collectAsState()
+    val update by a.m.update.collectAsState()
+    val user by a.m.user.collectAsState()
 
     fun login() {
         if (!disabledLogin) {
@@ -82,7 +82,7 @@ fun HomePage(a: MainActivity) {
                     val token = a.dataStore.data
                         .map{it[stringPreferencesKey("refresh_token")]}
                         .firstOrNull() ?: ""
-                    HttpUtil.auth.logout(token).enqueue(object : Callback<Unit> {
+                    HttpApi.oauth.logout(token).enqueue(object : Callback<Unit> {
                         override fun onResponse(p0: Call<Unit>, p1: Response<Unit>) {
                             scope.launch {
                                 a.dataStore.edit {
@@ -170,7 +170,7 @@ fun HomePage(a: MainActivity) {
         a.startActivity(intent)
     }
 
-    a.s.setSnackBarHostState(snackBarHostState)
+    a.m.setSnackBarHostState(snackBarHostState)
 
     Scaffold(
         snackbarHost = {

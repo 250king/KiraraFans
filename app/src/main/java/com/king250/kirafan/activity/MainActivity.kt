@@ -26,6 +26,7 @@ import androidx.datastore.preferences.core.longPreferencesKey
 import androidx.datastore.preferences.core.stringPreferencesKey
 import androidx.lifecycle.lifecycleScope
 import com.king250.kirafan.Env
+import com.king250.kirafan.api
 import com.king250.kirafan.dataStore
 import com.king250.kirafan.handler.ConnectorHandler
 import com.king250.kirafan.model.data.Token
@@ -35,7 +36,6 @@ import com.king250.kirafan.ui.page.AbiWarning
 import com.king250.kirafan.ui.page.HomePage
 import com.king250.kirafan.ui.theme.KiraraFansTheme
 import com.king250.kirafan.util.ClientUtil
-import com.king250.kirafan.util.HttpUtil
 import com.king250.kirafan.util.IpcUtil
 import kotlinx.coroutines.delay
 import kotlinx.coroutines.flow.firstOrNull
@@ -61,7 +61,7 @@ class MainActivity : ComponentActivity() {
 
     var challenge: String? = null
 
-    val s: MainView by viewModels()
+    val m: MainView by viewModels()
 
     val d: DialogView by viewModels()
 
@@ -80,14 +80,14 @@ class MainActivity : ComponentActivity() {
                     connect()
                 }
                 else {
-                    s.showSnackBar("这个是程序运行要用到的，所以还是求求你授权吧~")
+                    m.showSnackBar("这个是程序运行要用到的，所以还是求求你授权吧~")
                 }
             }
             notificationSettingActivity = registerForActivityResult(ActivityResultContracts.StartActivityForResult()) {
                 if (Build.VERSION.SDK_INT >= Build.VERSION_CODES.TIRAMISU) {
                     val result = ContextCompat.checkSelfPermission(this, Manifest.permission.POST_NOTIFICATIONS)
                     if (result == PackageManager.PERMISSION_DENIED) {
-                        s.showSnackBar("这个是程序运行要用到的，所以还是求求你授权吧~")
+                        m.showSnackBar("这个是程序运行要用到的，所以还是求求你授权吧~")
                     }
                     else {
                         connect()
@@ -96,7 +96,7 @@ class MainActivity : ComponentActivity() {
                 else {
                     val enabled = NotificationManagerCompat.from(this).areNotificationsEnabled()
                     if (!enabled) {
-                        s.showSnackBar("这个是程序运行要用到的，所以还是求求你授权吧~")
+                        m.showSnackBar("这个是程序运行要用到的，所以还是求求你授权吧~")
                     }
                     else {
                         connect()
@@ -109,7 +109,7 @@ class MainActivity : ComponentActivity() {
                 }
                 else {
                     if (ActivityCompat.shouldShowRequestPermissionRationale(this, Manifest.permission.POST_NOTIFICATIONS)) {
-                        s.showSnackBar("这个是程序运行要用到的，所以还是求求你授权吧~")
+                        m.showSnackBar("这个是程序运行要用到的，所以还是求求你授权吧~")
                     }
                     else{
                         ClientUtil.toast(this, "由于你已经设置不允许再请求权限了，所以只能你自己设置了（")
@@ -127,7 +127,7 @@ class MainActivity : ComponentActivity() {
                     }
                 }
                 else {
-                    s.showSnackBar("只有认真阅读且同意了才能玩~")
+                    m.showSnackBar("只有认真阅读且同意了才能玩~")
                 }
             }
             onBackPressedDispatcher.addCallback(this) {
@@ -139,16 +139,16 @@ class MainActivity : ComponentActivity() {
                 }
             }
             lifecycleScope.launch {
-                s.init()
+                m.init()
                 val token = dataStore.data.map{it[stringPreferencesKey("access_token")]}.firstOrNull()
                 compatSplashScreen.setKeepOnScreenCondition {false}
                 if (token == null) {
-                    s.setLoading(false)
+                    m.setLoading(false)
                 }
                 else {
-                    s.refresh()
+                    m.refresh()
                 }
-                s.check()
+                m.check()
             }
         }
         else {
@@ -165,32 +165,32 @@ class MainActivity : ComponentActivity() {
         super.onResume()
         try {
             val info = packageManager.getPackageInfo(Env.TARGET_PACKAGE, 0)
-            s.setVersion(if (Env.HEIGHT_ANDROID) {"VMOS ${info.versionName}"} else {info.versionName})
+            m.setVersion(if (Env.HEIGHT_ANDROID) {"VMOS ${info.versionName}"} else {info.versionName})
         }
         catch (_: Exception) {
-            s.setVersion(null)
+            m.setVersion(null)
         }
     }
 
     override fun onNewIntent(intent: Intent) {
         super.onNewIntent(intent)
         if (intent.data == null && intent.action != Intent.ACTION_VIEW) {
-            s.setLoading(false)
+            m.setLoading(false)
             return
         }
-        s.setLoading(true)
-        HttpUtil.auth.login(
+        m.setLoading(true)
+        api.oauth.login(
             code = intent.data!!.getQueryParameter("code") ?: "",
             codeVerifier = challenge ?: ""
         ).enqueue(object : Callback<Token> {
             override fun onResponse(p0: Call<Token>, p1: Response<Token>) {
                 if (!p1.isSuccessful) {
-                    s.setLoading(false)
+                    m.setLoading(false)
                     return
                 }
                 val token = p1.body()
                 if (token == null) {
-                    s.setLoading(false)
+                    m.setLoading(false)
                     return
                 }
                 lifecycleScope.launch {
@@ -199,14 +199,14 @@ class MainActivity : ComponentActivity() {
                         it[stringPreferencesKey("refresh_token")] = token.refreshToken
                         it[longPreferencesKey("expires_in")] = System.currentTimeMillis() / 1000 + token.expiresIn
                     }
-                    s.refresh()
+                    m.refresh()
                 }
             }
 
             override fun onFailure(p0: Call<Token>, p1: Throwable) {
                 p1.printStackTrace()
-                s.setLoading(false)
-                s.showSnackBar("网络好像不太好哦~")
+                m.setLoading(false)
+                m.showSnackBar("网络好像不太好哦~")
             }
         })
     }
@@ -234,7 +234,7 @@ class MainActivity : ComponentActivity() {
             lifecycleScope.launch {
                 val agreed = dataStore.data.firstOrNull()?.get(booleanPreferencesKey("agreed"))
                 if (agreed == true) {
-                    s.setDisabledConnect(true)
+                    m.setDisabledConnect(true)
                     ConnectorHandler.startV2Ray(this@MainActivity)
                 }
                 else {
@@ -251,15 +251,15 @@ class MainActivity : ComponentActivity() {
 
     fun logout(show: Boolean = true) {
         IpcUtil.toService(this, Env.STOP_SERVICE)
-        s.setUser(null)
+        m.setUser(null)
         if (show) {
-            s.showSnackBar("登录已经失效了（")
+            m.showSnackBar("登录已经失效了（")
         }
     }
 
     fun change(selected: Int) {
-        if (selected != s.selectedEndpoint.value) {
-            s.setDisabledConnect(true)
+        if (selected != m.selectedEndpoint.value) {
+            m.setDisabledConnect(true)
             IpcUtil.toService(this, Env.STOP_SERVICE)
             lifecycleScope.launch {
                 delay(500)

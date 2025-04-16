@@ -59,6 +59,10 @@
             android:exported="false"
             android:theme="@style/Theme.KiraraFans" />
         <activity
+            android:name=".activity.HelpActivity"
+            android:exported="false"
+            android:theme="@style/Theme.KiraraFans" />
+        <activity
             android:name=".activity.InfoActivity"
             android:exported="false"
             android:theme="@style/Theme.KiraraFans" />

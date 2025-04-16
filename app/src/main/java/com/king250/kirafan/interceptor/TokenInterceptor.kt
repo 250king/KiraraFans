@@ -5,8 +5,8 @@ import androidx.datastore.preferences.core.booleanPreferencesKey
 import androidx.datastore.preferences.core.edit
 import androidx.datastore.preferences.core.longPreferencesKey
 import androidx.datastore.preferences.core.stringPreferencesKey
+import com.king250.kirafan.api
 import com.king250.kirafan.dataStore
-import com.king250.kirafan.util.HttpUtil
 import kotlinx.coroutines.flow.firstOrNull
 import kotlinx.coroutines.runBlocking
 import okhttp3.Interceptor
@@ -28,7 +28,7 @@ class TokenInterceptor(private val context: Context): Interceptor {
                 val preferences = context.dataStore.data.firstOrNull()
                 preferences?.get(stringPreferencesKey("refresh_token")) ?: ""
             }
-            val response = HttpUtil.auth.refresh(refreshToken = refreshToken).execute()
+            val response = context.api.oauth.refresh(refreshToken = refreshToken).execute()
             val token = response.body()
             if (response.isSuccessful && token != null) {
                 accessToken = token.accessToken

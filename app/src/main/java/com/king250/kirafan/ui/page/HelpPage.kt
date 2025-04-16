@@ -1,12 +1,9 @@
 package com.king250.kirafan.ui.page
 
-import android.app.Activity
 import androidx.compose.animation.Crossfade
 import androidx.compose.foundation.layout.Arrangement
 import androidx.compose.foundation.layout.Column
-import androidx.compose.foundation.layout.Row
 import androidx.compose.foundation.layout.fillMaxSize
-import androidx.compose.foundation.layout.fillMaxWidth
 import androidx.compose.foundation.layout.padding
 import androidx.compose.foundation.rememberScrollState
 import androidx.compose.foundation.verticalScroll
@@ -14,38 +11,28 @@ import androidx.compose.material.icons.Icons
 import androidx.compose.material.icons.automirrored.filled.ArrowBack
 import androidx.compose.material3.*
 import androidx.compose.material3.pulltorefresh.PullToRefreshBox
-import androidx.compose.runtime.*
+import androidx.compose.runtime.Composable
+import androidx.compose.runtime.collectAsState
+import androidx.compose.runtime.getValue
 import androidx.compose.ui.Alignment
 import androidx.compose.ui.Modifier
 import androidx.compose.ui.unit.dp
-import com.king250.kirafan.activity.TermsActivity
+import com.king250.kirafan.activity.HelpActivity
 import dev.jeziellago.compose.markdowntext.MarkdownText
 
 @OptIn(ExperimentalMaterial3Api::class)
 @Composable
-fun TermsPage(a: TermsActivity) {
+fun HelpPage(a: HelpActivity) {
     val scrollState = rememberScrollState()
-    var agreed by remember { mutableStateOf(false) }
-    val refresh by a.t.refresh.collectAsState()
-    val loading by a.t.loading.collectAsState()
-    val content by a.t.content.collectAsState()
-    val bottom by remember {
-        derivedStateOf {
-            scrollState.value >= scrollState.maxValue
-        }
-    }
-
-    LaunchedEffect(bottom) {
-        if (bottom && content.isNotEmpty()) {
-            agreed = true
-        }
-    }
+    val refresh by a.h.refresh.collectAsState()
+    val loading by a.h.loading.collectAsState()
+    val content by a.h.content.collectAsState()
 
     Scaffold(
         topBar = {
             TopAppBar(
                 title = {
-                    Text("使用条款")
+                    Text("Q&A")
                 },
                 navigationIcon = {
                     IconButton(
@@ -57,40 +44,6 @@ fun TermsPage(a: TermsActivity) {
                     }
                 }
             )
-        },
-        bottomBar = {
-            val show = a.intent.getBooleanExtra("show", false)
-
-            Crossfade(targetState = loading) { loading ->
-                if (!loading && content.isNotEmpty() && show) {
-                    Column(Modifier.padding(16.dp)) {
-                        Row(
-                            verticalAlignment = Alignment.CenterVertically,
-                            modifier = Modifier.padding(bottom = 16.dp)
-                        ) {
-                            Text(
-                                text = "请认真阅读并滚动到底面后继续",
-                                modifier = Modifier.padding(8.dp)
-                            )
-                        }
-                        Row(
-                            verticalAlignment = Alignment.CenterVertically,
-                            horizontalArrangement = Arrangement.End,
-                            modifier = Modifier.fillMaxWidth()
-                        ) {
-                            Button (
-                                enabled = agreed,
-                                onClick = {
-                                    a.setResult(Activity.RESULT_OK)
-                                    a.finish()
-                                },
-                            ) {
-                                Text("继续")
-                            }
-                        }
-                    }
-                }
-            }
         }
     ) { innerPadding ->
         Crossfade(targetState = loading) { loading ->
@@ -109,8 +62,8 @@ fun TermsPage(a: TermsActivity) {
                         modifier = Modifier.fillMaxSize().padding(innerPadding),
                         isRefreshing = refresh,
                         onRefresh = {
-                            a.t.setRefresh(true)
-                            a.t.fetch()
+                            a.h.setRefresh(true)
+                            a.h.fetch()
                         }
                     ) {
                         Column(
@@ -132,7 +85,5 @@ fun TermsPage(a: TermsActivity) {
                 }
             }
         }
-
-
     }
 }

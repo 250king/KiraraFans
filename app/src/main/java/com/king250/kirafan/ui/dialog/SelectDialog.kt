@@ -18,8 +18,8 @@ import com.king250.kirafan.activity.MainActivity
 
 @Composable
 fun SelectDialog(a: MainActivity) {
-    val endpoints by a.s.endpoints.collectAsState()
-    val selectedEndpoint by a.s.selectedEndpoint.collectAsState()
+    val endpoints by a.m.endpoints.collectAsState()
+    val selectedEndpoint by a.m.selectedEndpoint.collectAsState()
     val isOpen by a.d.selector.collectAsState()
 
     if (isOpen) {
@@ -49,7 +49,7 @@ fun SelectDialog(a: MainActivity) {
                             RadioButton(
                                 onClick = {
                                     a.change(index)
-                                    a.s.setSelectedEndpoint(index)
+                                    a.m.setSelectedEndpoint(index)
                                     a.d.openSelector(false)
                                 },
                                 selected = index == selectedEndpoint

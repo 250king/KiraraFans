@@ -22,11 +22,12 @@ import coil.compose.rememberAsyncImagePainter
 import coil.request.ImageRequest
 import com.king250.kirafan.BuildConfig
 import com.king250.kirafan.R
-import com.king250.kirafan.model.data.About
-import com.king250.kirafan.model.data.Developer
 import com.king250.kirafan.activity.AboutActivity
+import com.king250.kirafan.activity.HelpActivity
 import com.king250.kirafan.activity.LicenseActivity
 import com.king250.kirafan.activity.TermsActivity
+import com.king250.kirafan.model.data.About
+import com.king250.kirafan.model.data.Developer
 import com.king250.kirafan.util.ClientUtil
 
 @OptIn(ExperimentalMaterial3Api::class)
@@ -34,6 +35,17 @@ import com.king250.kirafan.util.ClientUtil
 fun AboutPage(a: AboutActivity) {
     val scrollState = rememberScrollState()
     val items = listOf(
+        About("Q&A") {
+            val intent = Intent(a, HelpActivity::class.java)
+            a.startActivity(intent)
+        },
+        About("使用条款") {
+            val intent = Intent(a, TermsActivity::class.java)
+            a.startActivity(intent)
+        },
+        About("获得最新版本") {
+            ClientUtil.open(a, "https://github.com/gd1000m/Kirara-Repo/releases/latest")
+        },
         About("一起来玩") {
             ClientUtil.open(a, "https://discord.gg/YmbbxDsbNB")
         },
@@ -42,13 +54,6 @@ fun AboutPage(a: AboutActivity) {
         },
         About("服务器源代码") {
             ClientUtil.open(a, "https://gitlab.com/kirafan/sparkle/server")
-        },
-        About("获得最新版本") {
-            ClientUtil.open(a, "https://github.com/gd1000m/Kirara-Repo/releases/latest")
-        },
-        About("使用条款") {
-            val intent = Intent(a, TermsActivity::class.java)
-            a.startActivity(intent)
         },
         About("开源许可证") {
             val intent = Intent(a, LicenseActivity::class.java)

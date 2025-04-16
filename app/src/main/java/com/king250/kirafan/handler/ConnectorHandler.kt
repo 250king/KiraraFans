@@ -8,11 +8,11 @@ import android.os.Build
 import androidx.core.content.ContextCompat
 import com.king250.kirafan.Env
 import com.king250.kirafan.activity.MainActivity
+import com.king250.kirafan.api
 import com.king250.kirafan.model.data.ChangeOperation
 import com.king250.kirafan.model.data.Endpoint
 import com.king250.kirafan.service.ConnectorService
 import com.king250.kirafan.util.ClientUtil
-import com.king250.kirafan.util.HttpUtil
 import com.king250.kirafan.util.IpcUtil
 import go.Seq
 import libv2ray.Libv2ray
@@ -56,26 +56,26 @@ object ConnectorHandler {
         if (v2RayPoint.isRunning) {
             return
         }
-        HttpUtil.protected.getEndpoints().enqueue(object : Callback<List<Endpoint>> {
+        a.api.protected.getEndpoints().enqueue(object : Callback<List<Endpoint>> {
             override fun onResponse(p0: Call<List<Endpoint>>, p1: Response<List<Endpoint>>) {
-                a.s.setEndpoints(p1.body() ?: emptyList())
-                if (a.s.endpoints.value.isEmpty()) {
-                    a.s.showSnackBar("没有可用节点！")
+                a.m.setEndpoints(p1.body() ?: emptyList())
+                if (a.m.endpoints.value.isEmpty()) {
+                    a.m.showSnackBar("没有可用节点！")
                     IpcUtil.toUI(a, Env.SERVICE_STOPPED)
                     return
                 }
-                if (a.s.selectedEndpoint.value >= a.s.endpoints.value.size) {
-                    a.s.setSelectedEndpoint(0)
+                if (a.m.selectedEndpoint.value >= a.m.endpoints.value.size) {
+                    a.m.setSelectedEndpoint(0)
                 }
-                val region = a.s.endpoints.value[a.s.selectedEndpoint.value].region
+                val region = a.m.endpoints.value[a.m.selectedEndpoint.value].region
                 val payload = ChangeOperation(region)
-                HttpUtil.protected.changeEndpoint(payload).enqueue(object : Callback<ResponseBody> {
+                a.api.protected.changeEndpoint(payload).enqueue(object : Callback<ResponseBody> {
                     override fun onResponse(p0: Call<ResponseBody>, p1: Response<ResponseBody>) {
                         when (p1.code()) {
                             200 -> {
                                 val result = p1.body()?.string()
                                 if (result.isNullOrEmpty()) {
-                                    a.s.showSnackBar("配置文件为空")
+                                    a.m.showSnackBar("配置文件为空")
                                     IpcUtil.toUI(a, Env.SERVICE_STOPPED)
                                     return
                                 }
@@ -90,10 +90,10 @@ object ConnectorHandler {
                                 }
                             }
                             403 -> {
-                                a.s.showSnackBar("凭证已失效，请稍后再试")
+                                a.m.showSnackBar("凭证已失效，请稍后再试")
                             }
                             in 500..599 -> {
-                                a.s.showSnackBar("服务器炸了！")
+                                a.m.showSnackBar("服务器炸了！")
                             }
                         }
                         if (p1.code() != 200) {
@@ -103,7 +103,7 @@ object ConnectorHandler {
 
                     override fun onFailure(p0: Call<ResponseBody>, p1: Throwable) {
                         p1.printStackTrace()
-                        a.s.showSnackBar("网络好像不太好哦~")
+                        a.m.showSnackBar("网络好像不太好哦~")
                         IpcUtil.toUI(a, Env.SERVICE_STOPPED)
                     }
                 })
@@ -111,7 +111,7 @@ object ConnectorHandler {
 
             override fun onFailure(p0: Call<List<Endpoint>>, p1: Throwable) {
                 p1.printStackTrace()
-                a.s.showSnackBar("网络好像不太好哦~")
+                a.m.showSnackBar("网络好像不太好哦~")
                 IpcUtil.toUI(a, Env.SERVICE_STOPPED)
             }
         })
@@ -148,7 +148,7 @@ object ConnectorHandler {
         }
         IpcUtil.toUI(service, Env.SERVICE_STOPPED)
         service.unregisterReceiver(handler)
-        HttpUtil.protected.revokeSession().enqueue(object : Callback<Unit> {
+        service.api.protected.revokeSession().enqueue(object : Callback<Unit> {
             override fun onResponse(p0: Call<Unit>, p1: Response<Unit>) {}
 
             override fun onFailure(p0: Call<Unit>, p1: Throwable) {

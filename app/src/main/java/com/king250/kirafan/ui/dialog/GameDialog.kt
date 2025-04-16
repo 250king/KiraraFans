@@ -13,7 +13,7 @@ import com.king250.kirafan.activity.MainActivity
 @Composable
 fun VersionBadDialog(a: MainActivity) {
     val isOpen by a.d.game.collectAsState()
-    val version by a.s.version.collectAsState()
+    val version by a.m.version.collectAsState()
 
     if (isOpen) {
         AlertDialog(

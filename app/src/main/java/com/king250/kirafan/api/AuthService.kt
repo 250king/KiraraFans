@@ -1,4 +1,4 @@
-package com.king250.kirafan.service
+package com.king250.kirafan.api
 
 import com.king250.kirafan.Env
 import com.king250.kirafan.model.data.Token

@@ -15,10 +15,10 @@ import androidx.lifecycle.AndroidViewModel
 import androidx.lifecycle.viewModelScope
 import com.king250.kirafan.BuildConfig
 import com.king250.kirafan.Env
+import com.king250.kirafan.api
 import com.king250.kirafan.model.data.Endpoint
 import com.king250.kirafan.model.data.Release
 import com.king250.kirafan.model.data.User
-import com.king250.kirafan.util.HttpUtil
 import kotlinx.coroutines.Dispatchers
 import kotlinx.coroutines.flow.MutableStateFlow
 import kotlinx.coroutines.flow.StateFlow
@@ -118,7 +118,8 @@ class MainView(application: Application) : AndroidViewModel(application) {
     }
 
     fun refresh() {
-        HttpUtil.protected.getProfile().enqueue(object : Callback<User> {
+        val context = getApplication<Application>()
+        context.api.protected.getProfile().enqueue(object : Callback<User> {
             override fun onResponse(p0: Call<User>, p1: Response<User>) {
                 _user.value = p1.body()
                 _loading.value = false
@@ -132,7 +133,8 @@ class MainView(application: Application) : AndroidViewModel(application) {
     }
 
     fun check() {
-        HttpUtil.public.getRelease().enqueue(object : Callback<Release> {
+        val context = getApplication<Application>()
+        context.api.public.getRelease().enqueue(object : Callback<Release> {
             override fun onResponse(p0: Call<Release>, p1: Response<Release>) {
                 if (!p1.isSuccessful) {
                     showSnackBar("无法获得最新版本状态（")
