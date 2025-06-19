@@ -64,113 +64,6 @@ fun HomePage(a: MainActivity) {
     val update by a.m.update.collectAsState()
     val user by a.m.user.collectAsState()
 
-    fun login() {
-        if (!disabledLogin) {
-            if (user == null) {
-                a.challenge = StringUtil.generateCodeVerifier()
-                val redirectUri = URLEncoder.encode(Env.REDIRECT_URI, "utf-8")
-                val url = Env.AUTHORIZE_URI +
-                        "?response_type=code" +
-                        "&client_id=${Env.CLIENT_ID}" +
-                        "&redirect_uri=${redirectUri}" +
-                        "&code_challenge_method=S256" +
-                        "&code_challenge=${StringUtil.generateCodeChallenge(a.challenge!!)}"
-                ClientUtil.open(a, url)
-            }
-            else {
-                disabledLogin = true
-                scope.launch {
-                    val token = a.dataStore.data
-                        .map{it[stringPreferencesKey("refresh_token")]}
-                        .firstOrNull() ?: ""
-                    HttpApi.oauth.logout(token).enqueue(object : Callback<Unit> {
-                        override fun onResponse(p0: Call<Unit>, p1: Response<Unit>) {
-                            scope.launch {
-                                a.dataStore.edit {
-                                    it.remove(booleanPreferencesKey("agreed"))
-                                }
-                                a.logout(false)
-                                disabledLogin = false
-                            }
-                        }
-
-                        override fun onFailure(p0: Call<Unit>, p1: Throwable) {
-                            scope.launch {
-                                snackBarHostState.showSnackbar("网络好像不太好哦~")
-                                disabledLogin = false
-                            }
-                        }
-                    })
-                }
-            }
-        }
-    }
-    fun install() {
-        if (version == null) {
-            if (Env.HEIGHT_ANDROID) {
-                a.d.openSystem(true)
-            }
-            else {
-                a.install(Env.TARGET_PACKAGE)
-            }
-        }
-        else {
-            if (Env.TARGET_PACKAGE == "com.aniplex.kirarafantasia") {
-                if (version != "3.6.0") {
-                    a.d.openGame(true)
-                }
-                else if (ClientUtil.isRooted()) {
-                    a.d.openRoot(true)
-                }
-                else if (ClientUtil.isDebug(a.contentResolver)) {
-                    a.d.openUsb(true)
-                }
-                else {
-                    val intent = a.packageManager.getLaunchIntentForPackage(Env.TARGET_PACKAGE)
-                    a.startActivity(intent)
-                }
-            }
-            else {
-                val intent = a.packageManager.getLaunchIntentForPackage(Env.TARGET_PACKAGE)
-                a.startActivity(intent)
-            }
-        }
-    }
-    fun connect() {
-        if (!disabledConnect) {
-            if (connected) {
-                IpcUtil.toService(a, Env.STOP_SERVICE)
-            }
-            else {
-                if (Build.VERSION.SDK_INT >= Build.VERSION_CODES.TIRAMISU) {
-                    if (ContextCompat.checkSelfPermission(a, Manifest.permission.POST_NOTIFICATIONS) == PackageManager.PERMISSION_DENIED) {
-                        a.permissionActivity.launch(Manifest.permission.POST_NOTIFICATIONS)
-                    }
-                    else {
-                        a.connect()
-                    }
-                }
-                else {
-                    val enabled = NotificationManagerCompat.from(a).areNotificationsEnabled()
-                    if (!enabled) {
-                        a.enableNotification()
-                    }
-                    else {
-                        a.connect()
-                    }
-                }
-            }
-        }
-    }
-    fun about() {
-        val intent = Intent(a, AboutActivity::class.java)
-        a.startActivity(intent)
-    }
-    fun info() {
-        val intent = Intent(a, InfoActivity::class.java)
-        a.startActivity(intent)
-    }
-
     a.m.setSnackBarHostState(snackBarHostState)
 
     Scaffold(
@@ -188,21 +81,25 @@ fun HomePage(a: MainActivity) {
         Crossfade(targetState = loading, label = "") { loading ->
             if (loading) {
                 Column(
-                    modifier = Modifier.padding(innerPadding).fillMaxSize(),
+                    modifier = Modifier
+                        .padding(innerPadding)
+                        .fillMaxSize(),
                     verticalArrangement = Arrangement.Center,
                     horizontalAlignment = Alignment.CenterHorizontally
                 ) {
                     CircularProgressIndicator()
                 }
-            }
-            else {
+            } else {
                 val text = if (Env.HEIGHT_ANDROID) {
                     "Android 14+建议阅读"
-                }
-                else {
+                } else {
                     "有任何问题可查看"
                 }
-                Column(Modifier.padding(innerPadding).verticalScroll(scrollState)) {
+                Column(
+                    Modifier
+                        .padding(innerPadding)
+                        .verticalScroll(scrollState)
+                ) {
                     AnimatedVisibility(update) {
                         CardButton(
                             icon = {
@@ -227,7 +124,10 @@ fun HomePage(a: MainActivity) {
                                 contentDescription = null
                             )
                         },
-                        onClick = {info()},
+                        onClick = {
+                            val intent = Intent(a, InfoActivity::class.java)
+                            a.startActivity(intent)
+                        },
                         title = "Android ${Build.VERSION.RELEASE}",
                         description = "点击可查看设备详情"
                     )
@@ -239,10 +139,11 @@ fun HomePage(a: MainActivity) {
                                     imageVector = Icons.Default.Person,
                                     contentDescription = null
                                 )
-                            }
-                            else {
+                            } else {
                                 AsyncImage(
-                                    modifier = Modifier.clip(CircleShape).size(48.dp),
+                                    modifier = Modifier
+                                        .clip(CircleShape)
+                                        .size(48.dp),
                                     model = ImageRequest
                                         .Builder(a)
                                         .data(user!!.avatar)
@@ -254,17 +155,68 @@ fun HomePage(a: MainActivity) {
                                 )
                             }
                         },
-                        onClick = {login()},
+                        onClick = {
+                            if (!disabledLogin) {
+                                if (user == null) {
+                                    a.challenge = StringUtil.generateCodeVerifier()
+                                    val redirectUri = URLEncoder.encode(Env.REDIRECT_URI, "utf-8")
+                                    val url = Env.AUTHORIZE_URI +
+                                            "?response_type=code" +
+                                            "&client_id=${Env.CLIENT_ID}" +
+                                            "&redirect_uri=${redirectUri}" +
+                                            "&code_challenge_method=S256" +
+                                            "&code_challenge=${StringUtil.generateCodeChallenge(a.challenge!!)}"
+                                    ClientUtil.open(a, url)
+                                } else {
+                                    disabledLogin = true
+                                    scope.launch {
+                                        val token = a.dataStore.data
+                                            .map { it[stringPreferencesKey("refresh_token")] }
+                                            .firstOrNull() ?: ""
+                                        HttpApi.oauth.logout(token)
+                                            .enqueue(object : Callback<Unit> {
+                                                override fun onResponse(
+                                                    p0: Call<Unit>,
+                                                    p1: Response<Unit>
+                                                ) {
+                                                    scope.launch {
+                                                        a.dataStore.edit {
+                                                            it.remove(booleanPreferencesKey("agreed"))
+                                                        }
+                                                        a.logout(false)
+                                                        disabledLogin = false
+                                                    }
+                                                }
+
+                                                override fun onFailure(
+                                                    p0: Call<Unit>,
+                                                    p1: Throwable
+                                                ) {
+                                                    scope.launch {
+                                                        snackBarHostState.showSnackbar("网络好像不太好哦~")
+                                                        disabledLogin = false
+                                                    }
+                                                }
+                                            })
+                                    }
+                                }
+                            }
+                        },
                         title = user?.name ?: "未登录",
-                        description = "点击${if (user == null) {"进行登录"} else {"退出登录"}}",
+                        description = "点击${
+                            if (user == null) {
+                                "进行登录"
+                            } else {
+                                "退出登录"
+                            }
+                        }",
                     )
                     AnimatedVisibility(user != null) {
                         CardButton(
                             icon = {
                                 if (disabledConnect) {
                                     CircularProgressIndicator()
-                                }
-                                else {
+                                } else {
                                     Icon(
                                         modifier = Modifier.size(24.dp),
                                         painter = painterResource(R.drawable.cable),
@@ -272,9 +224,37 @@ fun HomePage(a: MainActivity) {
                                     )
                                 }
                             },
-                            onClick = {connect()},
+                            onClick = {
+                                if (!disabledConnect) {
+                                    if (connected) {
+                                        IpcUtil.toService(a, Env.STOP_SERVICE)
+                                    } else {
+                                        if (Build.VERSION.SDK_INT >= Build.VERSION_CODES.TIRAMISU) {
+                                            val permission = Manifest.permission.POST_NOTIFICATIONS
+                                            val result = ContextCompat.checkSelfPermission(a, permission)
+                                            if (result == PackageManager.PERMISSION_DENIED) {
+                                                a.permissionActivity.launch(permission)
+                                            } else {
+                                                a.connect()
+                                            }
+                                        } else {
+                                            val enabled = NotificationManagerCompat.from(a)
+                                                .areNotificationsEnabled()
+                                            if (!enabled) {
+                                                a.enableNotification()
+                                            } else {
+                                                a.connect()
+                                            }
+                                        }
+                                    }
+                                }
+                            },
                             title = "连接至专网",
-                            description = if(connected) {"已连接"} else {"未连接"}
+                            description = if (connected) {
+                                "已连接"
+                            } else {
+                                "未连接"
+                            }
                         )
                     }
                     AnimatedVisibility(connected) {
@@ -302,9 +282,39 @@ fun HomePage(a: MainActivity) {
                                     contentDescription = null
                                 )
                             },
-                            onClick = {install()},
+                            onClick = {
+                                if (version == null) {
+                                    if (Env.HEIGHT_ANDROID) {
+                                        a.d.openSystem(true)
+                                    } else {
+                                        a.install(Env.TARGET_PACKAGE)
+                                    }
+                                } else {
+                                    if (Env.TARGET_PACKAGE == "com.aniplex.kirarafantasia") {
+                                        if (version != "3.6.0") {
+                                            a.d.openGame(true)
+                                        } else if (ClientUtil.isRooted()) {
+                                            a.d.openRoot(true)
+                                        } else if (ClientUtil.isDebug(a.contentResolver)) {
+                                            a.d.openUsb(true)
+                                        } else {
+                                            val intent =
+                                                a.packageManager.getLaunchIntentForPackage(Env.TARGET_PACKAGE)
+                                            a.startActivity(intent)
+                                        }
+                                    } else {
+                                        val intent =
+                                            a.packageManager.getLaunchIntentForPackage(Env.TARGET_PACKAGE)
+                                        a.startActivity(intent)
+                                    }
+                                }
+                            },
                             title = version ?: "未安装",
-                            description = if(version == null) {"点按可安装"} else {"启动游戏"}
+                            description = if (version == null) {
+                                "点按可安装"
+                            } else {
+                                "启动游戏"
+                            }
                         )
                     }
                     CardButton(
@@ -330,7 +340,10 @@ fun HomePage(a: MainActivity) {
                                 contentDescription = null
                             )
                         },
-                        onClick = {about()},
+                        onClick = {
+                            val intent = Intent(a, AboutActivity::class.java)
+                            a.startActivity(intent)
+                        },
                         title = "关于"
                     )
                 }
