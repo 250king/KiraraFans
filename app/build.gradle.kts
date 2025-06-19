@@ -1,3 +1,5 @@
+@file:Suppress("UnstableApiUsage")
+
 plugins {
     id("com.android.application")
     id("org.jetbrains.kotlin.android")
@@ -8,14 +10,14 @@ plugins {
 
 android {
     namespace = "com.king250.kirafan"
-    compileSdk = 35
+    compileSdk = 36
 
     defaultConfig {
         applicationId = "com.king250.kirafan"
         minSdk = 24
-        targetSdk = 35
-        versionCode = 40803
-        versionName = "4.8.3"
+        targetSdk = 36
+        versionCode = 40804
+        versionName = "4.8.4"
         testInstrumentationRunner = "androidx.test.runner.AndroidJUnitRunner"
         vectorDrawables {
             useSupportLibrary = true
@@ -53,7 +55,7 @@ android {
     buildTypes {
         release {
             isMinifyEnabled = true
-            proguardFiles("retrofit2.pro")
+            proguardFiles("rule.pro")
         }
     }
 
@@ -73,7 +75,7 @@ android {
     }
 
     composeOptions {
-        kotlinCompilerExtensionVersion = "1.5.15"
+        kotlinCompilerExtensionVersion = "2.1.21"
     }
 
     packaging {
@@ -89,7 +91,7 @@ aboutLibraries {
 
 dependencies {
     implementation(fileTree(mapOf("dir" to "libs", "include" to listOf("*.aar", "*.jar"))))
-    implementation(platform("androidx.compose:compose-bom:2025.04.00"))
+    implementation(platform("androidx.compose:compose-bom:2025.06.01"))
     implementation("androidx.activity:activity-compose:1.10.1")
     implementation("androidx.browser:browser:1.8.0")
     implementation("androidx.core:core-ktx:1.16.0")
@@ -97,18 +99,18 @@ dependencies {
     implementation("androidx.compose.ui:ui")
     implementation("androidx.compose.ui:ui-graphics")
     implementation("androidx.compose.material3:material3")
-    implementation("androidx.datastore:datastore-preferences:1.1.4")
-    implementation("androidx.lifecycle:lifecycle-runtime-ktx:2.8.7")
+    implementation("androidx.datastore:datastore-preferences:1.1.7")
+    implementation("androidx.lifecycle:lifecycle-runtime-ktx:2.9.1")
     implementation("com.github.jeziellago:compose-markdown:0.5.7")
-    implementation("com.mikepenz:aboutlibraries-core:11.2.3")
-    implementation("com.mikepenz:aboutlibraries-compose-m3:11.2.3")
+    implementation("com.mikepenz:aboutlibraries-core:11.6.3")
+    implementation("com.mikepenz:aboutlibraries-compose-m3:11.6.3")
     implementation("com.squareup.okhttp3:okhttp:4.12.0")
     implementation("com.squareup.retrofit2:retrofit:2.9.0")
     implementation("com.squareup.retrofit2:converter-gson:2.9.0")
     implementation("io.coil-kt:coil-compose:2.7.0")
     implementation(kotlin("script-runtime"))
     testImplementation("junit:junit:4.13.2")
-    androidTestImplementation(platform("androidx.compose:compose-bom:2025.04.00"))
+    androidTestImplementation(platform("androidx.compose:compose-bom:2025.06.01"))
     androidTestImplementation("androidx.test.ext:junit:1.2.1")
     androidTestImplementation("androidx.test.espresso:espresso-core:3.6.1")
     androidTestImplementation("androidx.compose.ui:ui-test-junit4")

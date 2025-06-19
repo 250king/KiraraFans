@@ -8,7 +8,7 @@ import androidx.compose.runtime.collectAsState
 import androidx.compose.runtime.getValue
 import androidx.compose.ui.unit.sp
 import com.king250.kirafan.Env
-import com.king250.kirafan.activity.MainActivity
+import com.king250.kirafan.ui.activity.MainActivity
 
 @Composable
 fun RootDialog(a: MainActivity) {
@@ -23,10 +23,11 @@ fun RootDialog(a: MainActivity) {
                 Text("提示")
             },
             text = {
-                Text(
-                    text = "好像你的设备已经开启了Root且未正确隐藏，这会使得游戏检测到异常并自动闪退，请问要退出进行调整还是继续游玩？",
-                    lineHeight = 24.sp
-                )
+                val text = """
+                    好像你的设备已经开启了Root且未正确隐藏，这会使得游戏检测到异常并自动闪退，请问要退出进行调整还是继续游玩？
+                    另外，也不要在Xposed框架里面勾选游戏本体，否则也会造成闪退。
+                """.trimIndent()
+                Text(text = text, lineHeight = 24.sp)
             },
             confirmButton = {
                 TextButton(

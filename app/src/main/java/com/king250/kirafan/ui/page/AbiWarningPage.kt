@@ -19,7 +19,7 @@ import coil.request.ImageRequest
 import com.king250.kirafan.Env
 import com.king250.kirafan.R
 import com.king250.kirafan.util.ClientUtil
-import com.king250.kirafan.activity.MainActivity
+import com.king250.kirafan.ui.activity.MainActivity
 
 @Composable
 fun AbiWarning(a: MainActivity) {

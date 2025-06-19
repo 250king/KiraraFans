@@ -25,7 +25,7 @@ class TermsView(application: Application) : AndroidViewModel(application) {
 
     fun fetch() {
         val context = getApplication<Application>()
-        context.api.protected.getTerms().enqueue(object : Callback<ResponseBody> {
+        api.protected.getTerms().enqueue(object : Callback<ResponseBody> {
             override fun onResponse(p0: Call<ResponseBody?>, p1: Response<ResponseBody?>) {
                 _content.value = p1.body()?.string() ?: ""
                 _loading.value = false

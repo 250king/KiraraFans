@@ -11,7 +11,7 @@ import androidx.annotation.Keep
 import androidx.core.app.NotificationCompat
 import com.king250.kirafan.Env
 import com.king250.kirafan.R
-import com.king250.kirafan.activity.MainActivity
+import com.king250.kirafan.ui.activity.MainActivity
 import com.king250.kirafan.handler.ConnectorHandler
 import com.king250.kirafan.handler.ServiceHandler
 import kotlinx.coroutines.CoroutineScope
@@ -22,8 +22,6 @@ import java.io.File
 import java.lang.ref.SoftReference
 
 class ConnectorService : VpnService(), ServiceHandler {
-    private var isRunning = false
-
     private lateinit var fd: ParcelFileDescriptor
 
     private lateinit var tunnel: Job
@@ -53,17 +51,24 @@ class ConnectorService : VpnService(), ServiceHandler {
         stopV2Ray()
     }
 
+    override fun onTaskRemoved(rootIntent: Intent?) {
+        stopV2Ray()
+        super.onTaskRemoved(rootIntent)
+    }
+
     override fun onStartCommand(intent: Intent?, flags: Int, startId: Int): Int {
-        ConnectorHandler.startV2RayPoint()
-        val mainIntent = Intent(this, MainActivity::class.java)
+        if (ConnectorHandler.startCoreLoop()) {
+            startService()
+        }
+        val mainIntent = Intent(this@ConnectorService, MainActivity::class.java)
         mainIntent.flags = Intent.FLAG_ACTIVITY_SINGLE_TOP or Intent.FLAG_ACTIVITY_REORDER_TO_FRONT
         val backIntent = PendingIntent.getActivity(
-            this,
+            this@ConnectorService,
             0,
             mainIntent,
             PendingIntent.FLAG_UPDATE_CURRENT or PendingIntent.FLAG_IMMUTABLE
         )
-        val notification = NotificationCompat.Builder(this, Env.NOTIFICATION_CHANNEL).apply {
+        val notification = NotificationCompat.Builder(this@ConnectorService, Env.NOTIFICATION_CHANNEL).apply {
             setContentTitle("GNet™ VPN Gateway Connector")
             setContentText("已连接至SparkleFantasia CN组织机构专用网络")
             setSmallIcon(R.drawable.ic_notification)
@@ -98,10 +103,10 @@ class ConnectorService : VpnService(), ServiceHandler {
         try {
             fd.close()
         }
-        catch (_: Exception) {}
+        catch (_: Exception) {
+        }
         try {
             fd = builder.establish()!!
-            isRunning = true
             runTun2socks()
         }
         catch (e: Exception) {
@@ -118,8 +123,7 @@ class ConnectorService : VpnService(), ServiceHandler {
         return protect(socket)
     }
 
-    private fun stopV2Ray(isForced: Boolean = true) {
-        isRunning = false
+    private fun stopV2Ray() {
         try {
             TProxyStopService()
             tunnel.cancel()
@@ -127,22 +131,25 @@ class ConnectorService : VpnService(), ServiceHandler {
         catch (e: Exception) {
             e.printStackTrace()
         }
-        ConnectorHandler.stopV2rayPoint()
-        if (isForced) {
-            stopSelf()
-            try {
-                fd.close()
-            }
-            catch (_: Exception) {}
+        ConnectorHandler.stopCoreLoop()
+        stopSelf()
+        try {
+            fd.close()
+        }
+        catch (e: Exception) {
+            e.printStackTrace()
         }
     }
 
     private fun runTun2socks() {
         try {
             tunnel = CoroutineScope(Dispatchers.IO).launch {
-                if (isRunning) {
+                try {
                     val dir = getExternalFilesDir("assets")?.absolutePath
                     TProxyStartService(File(dir, "tunnel.yaml").absolutePath, fd.fd)
+                }
+                catch (e: Exception) {
+                    e.printStackTrace()
                 }
             }
             tunnel.start()

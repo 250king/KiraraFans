@@ -14,7 +14,7 @@ import androidx.compose.runtime.getValue
 import androidx.compose.ui.Alignment
 import androidx.compose.ui.Modifier
 import androidx.compose.ui.unit.dp
-import com.king250.kirafan.activity.MainActivity
+import com.king250.kirafan.ui.activity.MainActivity
 
 @Composable
 fun SelectDialog(a: MainActivity) {

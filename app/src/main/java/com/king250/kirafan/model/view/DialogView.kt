@@ -16,6 +16,8 @@ class DialogView(application: Application) : AndroidViewModel(application) {
 
     private val _selector = MutableStateFlow(false)
 
+    private val _next = MutableStateFlow(false)
+
     val root: StateFlow<Boolean> = _root
 
     val usb: StateFlow<Boolean> = _usb
@@ -25,6 +27,8 @@ class DialogView(application: Application) : AndroidViewModel(application) {
     val system: StateFlow<Boolean> = _system
 
     val selector: StateFlow<Boolean> = _selector
+
+    val next: StateFlow<Boolean> = _next
 
     fun openRoot(show: Boolean) {
         _root.value = show
@@ -44,5 +48,9 @@ class DialogView(application: Application) : AndroidViewModel(application) {
 
     fun openSelector(show: Boolean) {
         _selector.value = show
+    }
+
+    fun openNext(show: Boolean) {
+        _next.value = show
     }
 }

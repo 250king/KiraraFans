@@ -29,14 +29,15 @@ import coil.compose.AsyncImage
 import coil.request.ImageRequest
 import com.king250.kirafan.Env
 import com.king250.kirafan.R
-import com.king250.kirafan.activity.AboutActivity
-import com.king250.kirafan.activity.InfoActivity
-import com.king250.kirafan.activity.MainActivity
+import com.king250.kirafan.ui.activity.AboutActivity
+import com.king250.kirafan.ui.activity.InfoActivity
+import com.king250.kirafan.ui.activity.MainActivity
 import com.king250.kirafan.dataStore
 import com.king250.kirafan.ui.component.CardButton
 import com.king250.kirafan.ui.dialog.*
 import com.king250.kirafan.util.ClientUtil
 import com.king250.kirafan.api.HttpApi
+import com.king250.kirafan.ui.activity.HelpActivity
 import com.king250.kirafan.util.IpcUtil
 import com.king250.kirafan.util.StringUtil
 import kotlinx.coroutines.flow.firstOrNull
@@ -195,6 +196,12 @@ fun HomePage(a: MainActivity) {
                 }
             }
             else {
+                val text = if (Env.HEIGHT_ANDROID) {
+                    "Android 14+建议阅读"
+                }
+                else {
+                    "有任何问题可查看"
+                }
                 Column(Modifier.padding(innerPadding).verticalScroll(scrollState)) {
                     AnimatedVisibility(update) {
                         CardButton(
@@ -206,7 +213,7 @@ fun HomePage(a: MainActivity) {
                                 )
                             },
                             onClick = {
-                                ClientUtil.open(a, "https://github.com/gd1000m/Kirara-Repo/releases/latest")
+                                ClientUtil.open(a, "https://250king.top/s/bdZ4pT9jV0")
                             },
                             title = "有新版本发布了",
                             description = "点击即可下载最新版"
@@ -300,6 +307,21 @@ fun HomePage(a: MainActivity) {
                             description = if(version == null) {"点按可安装"} else {"启动游戏"}
                         )
                     }
+                    CardButton(
+                        icon = {
+                            Icon(
+                                modifier = Modifier.size(24.dp),
+                                painter = painterResource(R.drawable.developer_guide),
+                                contentDescription = null
+                            )
+                        },
+                        onClick = {
+                            val intent = Intent(a, HelpActivity::class.java)
+                            a.startActivity(intent)
+                        },
+                        title = "Q&A",
+                        description = text
+                    )
                     CardButton(
                         icon = {
                             Icon(

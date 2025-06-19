@@ -7,10 +7,10 @@ import androidx.datastore.preferences.core.Preferences
 import androidx.datastore.preferences.preferencesDataStore
 import com.king250.kirafan.api.HttpApi
 
-val Context.dataStore: DataStore<Preferences> by preferencesDataStore("main")
-
-val Context.api: HttpApi
+val api: HttpApi
     get() = HttpApi
+
+val Context.dataStore: DataStore<Preferences> by preferencesDataStore("main")
 
 class Application : Application() {
     companion object {

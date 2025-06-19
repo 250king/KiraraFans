@@ -55,31 +55,31 @@
             android:value="true" />
 
         <activity
-            android:name=".activity.TermsActivity"
+            android:name=".ui.activity.TermsActivity"
             android:exported="false"
             android:theme="@style/Theme.KiraraFans" />
         <activity
-            android:name=".activity.HelpActivity"
+            android:name=".ui.activity.HelpActivity"
             android:exported="false"
             android:theme="@style/Theme.KiraraFans" />
         <activity
-            android:name=".activity.InfoActivity"
+            android:name=".ui.activity.InfoActivity"
             android:exported="false"
             android:theme="@style/Theme.KiraraFans" />
         <activity
-            android:name=".activity.AboutActivity"
+            android:name=".ui.activity.AboutActivity"
             android:exported="false"
             android:theme="@style/Theme.KiraraFans" />
         <activity
-            android:name=".activity.LicenseActivity"
+            android:name=".ui.activity.LicenseActivity"
             android:exported="false"
             android:theme="@style/Theme.KiraraFans" />
         <activity
-            android:name=".activity.LicenseDetailActivity"
+            android:name=".ui.activity.LicenseDetailActivity"
             android:exported="false"
             android:theme="@style/Theme.KiraraFans" />
         <activity
-            android:name=".activity.MainActivity"
+            android:name=".ui.activity.MainActivity"
             android:exported="true"
             android:launchMode="singleTask"
             android:theme="@style/Theme.LaunchTheme" >

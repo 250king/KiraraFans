@@ -8,8 +8,8 @@ import androidx.compose.material.icons.automirrored.filled.ArrowBack
 import androidx.compose.material3.*
 import androidx.compose.runtime.Composable
 import androidx.compose.ui.Modifier
-import com.king250.kirafan.activity.LicenseActivity
-import com.king250.kirafan.activity.LicenseDetailActivity
+import com.king250.kirafan.ui.activity.LicenseActivity
+import com.king250.kirafan.ui.activity.LicenseDetailActivity
 import com.mikepenz.aboutlibraries.ui.compose.m3.LibrariesContainer
 
 @OptIn(ExperimentalMaterial3Api::class)

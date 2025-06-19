@@ -15,7 +15,7 @@ import androidx.compose.material3.*
 import androidx.compose.runtime.Composable
 import androidx.compose.ui.Modifier
 import com.king250.kirafan.model.data.Info
-import com.king250.kirafan.activity.InfoActivity
+import com.king250.kirafan.ui.activity.InfoActivity
 import com.king250.kirafan.util.ClientUtil
 
 @OptIn(ExperimentalMaterial3Api::class)

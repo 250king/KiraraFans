@@ -13,9 +13,9 @@ import androidx.core.content.ContextCompat
 import androidx.core.content.ContextCompat.getSystemService
 import androidx.lifecycle.AndroidViewModel
 import androidx.lifecycle.viewModelScope
+import com.king250.kirafan.api
 import com.king250.kirafan.BuildConfig
 import com.king250.kirafan.Env
-import com.king250.kirafan.api
 import com.king250.kirafan.model.data.Endpoint
 import com.king250.kirafan.model.data.Release
 import com.king250.kirafan.model.data.User
@@ -118,8 +118,7 @@ class MainView(application: Application) : AndroidViewModel(application) {
     }
 
     fun refresh() {
-        val context = getApplication<Application>()
-        context.api.protected.getProfile().enqueue(object : Callback<User> {
+        api.protected.getProfile().enqueue(object : Callback<User> {
             override fun onResponse(p0: Call<User>, p1: Response<User>) {
                 _user.value = p1.body()
                 _loading.value = false
@@ -133,8 +132,7 @@ class MainView(application: Application) : AndroidViewModel(application) {
     }
 
     fun check() {
-        val context = getApplication<Application>()
-        context.api.public.getRelease().enqueue(object : Callback<Release> {
+        api.public.getRelease().enqueue(object : Callback<Release> {
             override fun onResponse(p0: Call<Release>, p1: Response<Release>) {
                 if (!p1.isSuccessful) {
                     showSnackBar("无法获得最新版本状态（")
