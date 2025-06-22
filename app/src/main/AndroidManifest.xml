@@ -28,7 +28,7 @@
             android:value="85b98317-c1ff-4b4a-9720-55edc3f676e5" />
         <meta-data
             android:name="com.gcloud.gclient.version"
-            android:value="2025.04" />
+            android:value="2025.06" />
         <meta-data
             android:name="io.sentry.dsn"
             android:value="https://d0f40e4c0d00d1d4cdb170bdff142f58@sentry.kirafan.xyz/4508992580354048" />
