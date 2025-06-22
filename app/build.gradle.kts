@@ -86,7 +86,9 @@ android {
 }
 
 aboutLibraries {
-    configPath = "config"
+    collect {
+        configPath.set(File("config"))
+    }
 }
 
 dependencies {
@@ -102,8 +104,8 @@ dependencies {
     implementation("androidx.datastore:datastore-preferences:1.1.7")
     implementation("androidx.lifecycle:lifecycle-runtime-ktx:2.9.1")
     implementation("com.github.jeziellago:compose-markdown:0.5.7")
-    implementation("com.mikepenz:aboutlibraries-core:11.6.3")
-    implementation("com.mikepenz:aboutlibraries-compose-m3:11.6.3")
+    implementation("com.mikepenz:aboutlibraries-core:12.2.3")
+    implementation("com.mikepenz:aboutlibraries-compose-m3:12.2.3")
     implementation("com.squareup.okhttp3:okhttp:4.12.0")
     implementation("com.squareup.retrofit2:retrofit:2.9.0")
     implementation("com.squareup.retrofit2:converter-gson:2.9.0")

@@ -10,7 +10,9 @@ import androidx.compose.runtime.Composable
 import androidx.compose.ui.Modifier
 import com.king250.kirafan.ui.activity.LicenseActivity
 import com.king250.kirafan.ui.activity.LicenseDetailActivity
+import com.mikepenz.aboutlibraries.Libs
 import com.mikepenz.aboutlibraries.ui.compose.m3.LibrariesContainer
+import com.mikepenz.aboutlibraries.util.withContext
 
 @OptIn(ExperimentalMaterial3Api::class)
 @Composable
@@ -34,6 +36,7 @@ fun LicensePage(a: LicenseActivity) {
         }
     ) { innerPadding ->
         LibrariesContainer(
+            libraries = Libs.Builder().withContext(a).build(),
             modifier = Modifier.fillMaxSize().padding(innerPadding),
             onLibraryClick = {
                 val intent = Intent(a, LicenseDetailActivity::class.java)
