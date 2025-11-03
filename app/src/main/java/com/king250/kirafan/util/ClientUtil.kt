@@ -3,12 +3,12 @@ package com.king250.kirafan.util
 import android.annotation.SuppressLint
 import android.content.ContentResolver
 import android.content.Context
-import android.net.Uri
 import android.provider.Settings
 import android.util.Base64
 import android.widget.Toast
 import androidx.browser.customtabs.CustomTabsIntent
-import java.io.File
+import com.scottyab.rootbeer.RootBeer
+import androidx.core.net.toUri
 
 object ClientUtil {
     @SuppressLint("HardwareIds")
@@ -21,7 +21,7 @@ object ClientUtil {
 
     fun open(context: Context, url: String) {
         val intent = CustomTabsIntent.Builder().build()
-        intent.launchUrl(context, Uri.parse(url))
+        intent.launchUrl(context, url.toUri())
     }
 
     fun toast(context: Context, text: String, duration: Int = Toast.LENGTH_SHORT) {
@@ -41,19 +41,8 @@ object ClientUtil {
         }
     }
 
-    fun isRooted(): Boolean {
-        val paths = listOf(
-            "/system/xbin/su",
-            "/system/bin/su",
-            "/system/su",
-            "/sbin/su",
-            "/bin/su"
-        )
-        for (path in paths) {
-            if (File(path).exists()) {
-                return true
-            }
-        }
-        return false
+    fun isRooted(context: Context): Boolean {
+        val rootBeer = RootBeer(context)
+        return rootBeer.isRooted
     }
 }

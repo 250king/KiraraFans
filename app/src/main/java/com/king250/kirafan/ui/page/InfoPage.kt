@@ -36,7 +36,7 @@ fun InfoPage(a: InfoActivity) {
         ),
         Info(
             name = "Root",
-            value = if (ClientUtil.isRooted()) {
+            value = if (ClientUtil.isRooted(a)) {
                 "可用"
             }
             else {

@@ -106,6 +106,7 @@ dependencies {
     implementation("com.github.jeziellago:compose-markdown:0.5.7")
     implementation("com.mikepenz:aboutlibraries-core:13.1.0")
     implementation("com.mikepenz:aboutlibraries-compose-m3:13.1.0")
+    implementation("com.scottyab:rootbeer-lib:0.1.1")
     implementation("com.squareup.okhttp3:okhttp:5.3.0")
     implementation("com.squareup.retrofit2:retrofit:3.0.0")
     implementation("com.squareup.retrofit2:converter-gson:3.0.0")

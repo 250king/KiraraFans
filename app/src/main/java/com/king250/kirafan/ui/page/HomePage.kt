@@ -290,7 +290,7 @@ fun HomePage(a: MainActivity) {
                                     if (Env.TARGET_PACKAGE == "com.aniplex.kirarafantasia") {
                                         if (version != "3.6.0") {
                                             a.d.openGame(true)
-                                        } else if (ClientUtil.isRooted()) {
+                                        } else if (ClientUtil.isRooted(a)) {
                                             a.d.openRoot(true)
                                         } else if (ClientUtil.isDebug(a.contentResolver)) {
                                             a.d.openUsb(true)
