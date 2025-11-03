@@ -10,9 +10,6 @@ import androidx.compose.foundation.layout.*
 import androidx.compose.foundation.rememberScrollState
 import androidx.compose.foundation.shape.CircleShape
 import androidx.compose.foundation.verticalScroll
-import androidx.compose.material.icons.Icons
-import androidx.compose.material.icons.filled.Info
-import androidx.compose.material.icons.filled.Person
 import androidx.compose.material3.*
 import androidx.compose.runtime.*
 import androidx.compose.ui.Alignment
@@ -136,7 +133,7 @@ fun HomePage(a: MainActivity) {
                             if (user == null) {
                                 Icon(
                                     modifier = Modifier.size(24.dp),
-                                    imageVector = Icons.Default.Person,
+                                    painter = painterResource(R.drawable.person),
                                     contentDescription = null
                                 )
                             } else {
@@ -293,7 +290,7 @@ fun HomePage(a: MainActivity) {
                                     if (Env.TARGET_PACKAGE == "com.aniplex.kirarafantasia") {
                                         if (version != "3.6.0") {
                                             a.d.openGame(true)
-                                        } else if (ClientUtil.isRooted()) {
+                                        } else if (ClientUtil.isRooted(a)) {
                                             a.d.openRoot(true)
                                         } else if (ClientUtil.isDebug(a.contentResolver)) {
                                             a.d.openUsb(true)
@@ -321,7 +318,7 @@ fun HomePage(a: MainActivity) {
                         icon = {
                             Icon(
                                 modifier = Modifier.size(24.dp),
-                                painter = painterResource(R.drawable.developer_guide),
+                                painter = painterResource(R.drawable.guide),
                                 contentDescription = null
                             )
                         },
@@ -336,7 +333,7 @@ fun HomePage(a: MainActivity) {
                         icon = {
                             Icon(
                                 modifier = Modifier.size(24.dp),
-                                imageVector = Icons.Default.Info,
+                                painter = painterResource(R.drawable.info),
                                 contentDescription = null
                             )
                         },

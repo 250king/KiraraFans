@@ -7,13 +7,12 @@ import androidx.compose.foundation.layout.*
 import androidx.compose.foundation.rememberScrollState
 import androidx.compose.foundation.shape.CircleShape
 import androidx.compose.foundation.verticalScroll
-import androidx.compose.material.icons.Icons
-import androidx.compose.material.icons.automirrored.filled.ArrowBack
 import androidx.compose.material3.*
 import androidx.compose.runtime.Composable
 import androidx.compose.ui.Alignment
 import androidx.compose.ui.Modifier
 import androidx.compose.ui.draw.clip
+import androidx.compose.ui.res.painterResource
 import androidx.compose.ui.text.buildAnnotatedString
 import androidx.compose.ui.unit.dp
 import androidx.compose.ui.unit.sp
@@ -73,7 +72,10 @@ fun AboutPage(a: AboutActivity) {
                             a.finish()
                         }
                     ) {
-                        Icon(Icons.AutoMirrored.Filled.ArrowBack, contentDescription = null)
+                        Icon(
+                            painter = painterResource(R.drawable.back),
+                            contentDescription = null
+                        )
                     }
                 }
             )
@@ -88,7 +90,7 @@ fun AboutPage(a: AboutActivity) {
                     painter = rememberAsyncImagePainter(
                         model = ImageRequest
                             .Builder(a)
-                            .data(R.drawable.icon)
+                            .data(R.drawable.logo)
                             .apply {
                                 crossfade(true)
                             }

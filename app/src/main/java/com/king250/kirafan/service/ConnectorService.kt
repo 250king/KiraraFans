@@ -60,23 +60,6 @@ class ConnectorService : VpnService(), ServiceHandler {
         if (ConnectorHandler.startCoreLoop()) {
             startService()
         }
-        val mainIntent = Intent(this@ConnectorService, MainActivity::class.java)
-        mainIntent.flags = Intent.FLAG_ACTIVITY_SINGLE_TOP or Intent.FLAG_ACTIVITY_REORDER_TO_FRONT
-        val backIntent = PendingIntent.getActivity(
-            this@ConnectorService,
-            0,
-            mainIntent,
-            PendingIntent.FLAG_UPDATE_CURRENT or PendingIntent.FLAG_IMMUTABLE
-        )
-        val notification = NotificationCompat.Builder(this@ConnectorService, Env.NOTIFICATION_CHANNEL).apply {
-            setContentTitle("GNet™ VPN Gateway Connector")
-            setContentText("已连接至SparkleFantasia CN组织机构专用网络")
-            setSmallIcon(R.drawable.ic_notification)
-            setContentIntent(backIntent)
-            setAutoCancel(false)
-            setOngoing(true)
-        }.build()
-        startForeground(1, notification)
         return START_STICKY
     }
 
@@ -108,6 +91,23 @@ class ConnectorService : VpnService(), ServiceHandler {
         try {
             fd = builder.establish()!!
             runTun2socks()
+            val mainIntent = Intent(this@ConnectorService, MainActivity::class.java)
+            mainIntent.flags = Intent.FLAG_ACTIVITY_SINGLE_TOP or Intent.FLAG_ACTIVITY_REORDER_TO_FRONT
+            val backIntent = PendingIntent.getActivity(
+                this@ConnectorService,
+                0,
+                mainIntent,
+                PendingIntent.FLAG_UPDATE_CURRENT or PendingIntent.FLAG_IMMUTABLE
+            )
+            val notification = NotificationCompat.Builder(this@ConnectorService, Env.NOTIFICATION_CHANNEL).apply {
+                setContentTitle("GNet™ VPN Gateway Connector")
+                setContentText("已连接至SparkleFantasia CN组织机构专用网络")
+                setSmallIcon(R.drawable.ic_notification)
+                setContentIntent(backIntent)
+                setAutoCancel(false)
+                setOngoing(true)
+            }.build()
+            startForeground(1, notification)
         }
         catch (e: Exception) {
             e.printStackTrace()

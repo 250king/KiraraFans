@@ -9,11 +9,11 @@ import androidx.compose.foundation.layout.Column
 import androidx.compose.foundation.layout.padding
 import androidx.compose.foundation.rememberScrollState
 import androidx.compose.foundation.verticalScroll
-import androidx.compose.material.icons.Icons
-import androidx.compose.material.icons.automirrored.filled.ArrowBack
 import androidx.compose.material3.*
 import androidx.compose.runtime.Composable
 import androidx.compose.ui.Modifier
+import androidx.compose.ui.res.painterResource
+import com.king250.kirafan.R
 import com.king250.kirafan.model.data.Info
 import com.king250.kirafan.ui.activity.InfoActivity
 import com.king250.kirafan.util.ClientUtil
@@ -36,7 +36,7 @@ fun InfoPage(a: InfoActivity) {
         ),
         Info(
             name = "Root",
-            value = if (ClientUtil.isRooted()) {
+            value = if (ClientUtil.isRooted(a)) {
                 "可用"
             }
             else {
@@ -62,7 +62,10 @@ fun InfoPage(a: InfoActivity) {
                             a.finish()
                         }
                     ) {
-                        Icon(Icons.AutoMirrored.Filled.ArrowBack, contentDescription = null)
+                        Icon(
+                            painter = painterResource(R.drawable.back),
+                            contentDescription = null
+                        )
                     }
                 }
             )

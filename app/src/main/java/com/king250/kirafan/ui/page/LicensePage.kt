@@ -3,11 +3,11 @@ package com.king250.kirafan.ui.page
 import android.content.Intent
 import androidx.compose.foundation.layout.fillMaxSize
 import androidx.compose.foundation.layout.padding
-import androidx.compose.material.icons.Icons
-import androidx.compose.material.icons.automirrored.filled.ArrowBack
 import androidx.compose.material3.*
 import androidx.compose.runtime.Composable
 import androidx.compose.ui.Modifier
+import androidx.compose.ui.res.painterResource
+import com.king250.kirafan.R
 import com.king250.kirafan.ui.activity.LicenseActivity
 import com.king250.kirafan.ui.activity.LicenseDetailActivity
 import com.mikepenz.aboutlibraries.Libs
@@ -29,7 +29,10 @@ fun LicensePage(a: LicenseActivity) {
                             a.finish()
                         }
                     ) {
-                        Icon(Icons.AutoMirrored.Filled.ArrowBack, contentDescription = null)
+                        Icon(
+                            painter = painterResource(R.drawable.back),
+                            contentDescription = null
+                        )
                     }
                 }
             )
