@@ -28,16 +28,11 @@ object ClientUtil {
         Toast.makeText(context, text, duration).show()
     }
 
-    @SuppressLint("PrivateApi")
     fun isDebug(contentResolver: ContentResolver): Boolean {
-        try {
-            val result = Class.forName("android.os.SystemProperties")
-                .getMethod("get", String.Companion::class.java)
-                .invoke(null, "init.svc.adbd") as String
-            return result == "running"
-        }
-        catch (_: Exception) {
-            return Settings.Global.getInt(contentResolver, Settings.Global.ADB_ENABLED, 0) != 0
+        return try {
+            Settings.Global.getInt(contentResolver, Settings.Global.ADB_ENABLED) == 1
+        } catch (_: Settings.SettingNotFoundException) {
+            false
         }
     }
 

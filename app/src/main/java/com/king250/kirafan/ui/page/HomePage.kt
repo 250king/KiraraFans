@@ -290,10 +290,10 @@ fun HomePage(a: MainActivity) {
                                     if (Env.TARGET_PACKAGE == "com.aniplex.kirarafantasia") {
                                         if (version != "3.6.0") {
                                             a.d.openGame(true)
-                                        } else if (ClientUtil.isRooted(a)) {
-                                            a.d.openRoot(true)
-                                        } else if (ClientUtil.isDebug(a.contentResolver)) {
+                                        } else if (ClientUtil.isDebug(a.contentResolver) && !Env.HEIGHT_ANDROID) {
                                             a.d.openUsb(true)
+                                        } else if (ClientUtil.isRooted(a) && !Env.HEIGHT_ANDROID) {
+                                            a.d.openRoot(true)
                                         } else {
                                             val intent =
                                                 a.packageManager.getLaunchIntentForPackage(Env.TARGET_PACKAGE)

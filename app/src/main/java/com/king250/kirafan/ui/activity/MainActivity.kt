@@ -69,6 +69,12 @@ class MainActivity : ComponentActivity() {
         compatSplashScreen = installSplashScreen()
         super.onCreate(savedInstanceState)
         enableEdgeToEdge()
+        compatSplashScreen.setOnExitAnimationListener { splashScreenViewProvider ->
+            val splashView = splashScreenViewProvider.view
+            splashView.postDelayed({
+                splashScreenViewProvider.remove()
+            }, 300L)
+        }
         apkAbi = when (File(applicationInfo.nativeLibraryDir).name) {
             "arm64" -> "arm64-v8a"
             "arm" -> "armeabi-v7a"
