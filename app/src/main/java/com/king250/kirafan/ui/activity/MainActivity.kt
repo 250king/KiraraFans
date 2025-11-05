@@ -61,6 +61,8 @@ class MainActivity : ComponentActivity() {
 
     var challenge: String? = null
 
+    var keeping = true
+
     val m: MainView by viewModels()
 
     val d: DialogView by viewModels()
@@ -69,12 +71,6 @@ class MainActivity : ComponentActivity() {
         compatSplashScreen = installSplashScreen()
         super.onCreate(savedInstanceState)
         enableEdgeToEdge()
-        compatSplashScreen.setOnExitAnimationListener { splashScreenViewProvider ->
-            val splashView = splashScreenViewProvider.view
-            splashView.postDelayed({
-                splashScreenViewProvider.remove()
-            }, 300L)
-        }
         apkAbi = when (File(applicationInfo.nativeLibraryDir).name) {
             "arm64" -> "arm64-v8a"
             "arm" -> "armeabi-v7a"
@@ -144,16 +140,25 @@ class MainActivity : ComponentActivity() {
                     HomePage(this)
                 }
             }
+            compatSplashScreen.setKeepOnScreenCondition{ keeping }
             lifecycleScope.launch {
+                val start = System.currentTimeMillis()
                 m.init()
                 val token = dataStore.data.map{it[stringPreferencesKey("access_token")]}.firstOrNull()
-                compatSplashScreen.setKeepOnScreenCondition {false}
                 if (token == null) {
                     m.setLoading(false)
+                    while (System.currentTimeMillis() - start <= 500) {
+                        delay(50)
+                    }
+                    keeping = false
+                    m.check()
+                    return@launch
                 }
-                else {
-                    m.refresh()
+                m.refresh()
+                while (m.loading.value && System.currentTimeMillis() - start <= 1000) {
+                    delay(50)
                 }
+                keeping = false
                 m.check()
             }
         }
