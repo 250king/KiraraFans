@@ -23,6 +23,9 @@ interface ProtectedService {
     @DELETE("session")
     fun revokeSession() : Call<Unit>
 
+    @HEAD("session")
+    fun keepSession() : Call<Unit>
+
     @GET
     fun getProfile(@Url url: String = "https://account.250king.top/application/o/userinfo/") : Call<User>
 }

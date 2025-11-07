@@ -111,6 +111,7 @@ object ConnectorHandler {
             return false
         }
         val service = control?.get()?.getService() ?: return false
+        IpcUtil.toUI(service, Env.SERVICE_STARTED)
         try {
             val filter = IntentFilter(Env.SERVICE_CHANNEL)
             val flags = if (Build.VERSION.SDK_INT >= Build.VERSION_CODES.TIRAMISU) {
@@ -131,7 +132,6 @@ object ConnectorHandler {
             IpcUtil.toUI(service, Env.SERVICE_STOPPED)
             return false
         }
-        IpcUtil.toUI(service, Env.SERVICE_STARTED)
         return true
     }
 
@@ -145,13 +145,18 @@ object ConnectorHandler {
                 e.printStackTrace()
             }
         }
-        IpcUtil.toUI(service, Env.SERVICE_STOPPED)
+        api.protected.revokeSession().enqueue(object : Callback<Unit> {
+            override fun onResponse(call: Call<Unit?>, response: Response<Unit?>) {}
+
+            override fun onFailure(call: Call<Unit?>, t: Throwable) {}
+        })
         try {
             service.unregisterReceiver(receiver)
         }
         catch (e: Exception) {
             e.printStackTrace()
         }
+        IpcUtil.toUI(service, Env.SERVICE_STOPPED)
         return true
     }
 }
