@@ -24,7 +24,7 @@ class HelpView(application: Application) : AndroidViewModel(application) {
     val content: StateFlow<String> = _content
 
     fun fetch() {
-        api.protected.getHelp().enqueue(object : Callback<ResponseBody> {
+        api.public.getHelp().enqueue(object : Callback<ResponseBody> {
             override fun onResponse(p0: Call<ResponseBody?>, p1: Response<ResponseBody?>) {
                 _content.value = p1.body()?.string() ?: ""
                 _loading.value = false

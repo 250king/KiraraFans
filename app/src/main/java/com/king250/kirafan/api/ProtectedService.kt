@@ -8,12 +8,6 @@ import retrofit2.Call
 import retrofit2.http.*
 
 interface ProtectedService {
-    @GET("article/terms")
-    fun getTerms(): Call<ResponseBody>
-
-    @GET("article/help")
-    fun getHelp(): Call<ResponseBody>
-
     @GET("endpoint")
     fun getEndpoints() : Call<List<Endpoint>>
 
@@ -22,9 +16,6 @@ interface ProtectedService {
 
     @DELETE("session")
     fun revokeSession() : Call<Unit>
-
-    @HEAD("session")
-    fun keepSession() : Call<Unit>
 
     @GET
     fun getProfile(@Url url: String = "https://account.250king.top/application/o/userinfo/") : Call<User>

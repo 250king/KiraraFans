@@ -7,34 +7,26 @@ import android.content.Intent
 import android.net.VpnService
 import android.os.Build
 import android.os.ParcelFileDescriptor
-import android.os.PowerManager
 import android.os.StrictMode
 import androidx.annotation.Keep
 import androidx.core.app.NotificationCompat
 import com.king250.kirafan.Env
 import com.king250.kirafan.R
-import com.king250.kirafan.api
 import com.king250.kirafan.ui.activity.MainActivity
 import com.king250.kirafan.handler.ConnectorHandler
 import com.king250.kirafan.handler.ServiceHandler
 import kotlinx.coroutines.CoroutineScope
 import kotlinx.coroutines.Dispatchers
 import kotlinx.coroutines.Job
-import kotlinx.coroutines.delay
-import kotlinx.coroutines.isActive
 import kotlinx.coroutines.launch
 import java.io.File
 import java.lang.ref.SoftReference
 
-@SuppressLint("VpnServicePolicy", "WakelockTimeout")
+@SuppressLint("VpnServicePolicy")
 class ConnectorService : VpnService(), ServiceHandler {
     private lateinit var fd: ParcelFileDescriptor
 
     private lateinit var tunnel: Job
-
-    private lateinit var timer: Job
-
-    private lateinit var wakeLock: PowerManager.WakeLock
 
     init {
         System.loadLibrary("hev-socks5-tunnel")
@@ -101,19 +93,6 @@ class ConnectorService : VpnService(), ServiceHandler {
         try {
             fd = builder.establish()!!
             runTun2socks()
-            val powerManager = getSystemService(POWER_SERVICE) as PowerManager
-            timer = CoroutineScope(Dispatchers.IO).launch {
-                while (isActive) {
-                    wakeLock = powerManager.newWakeLock(PowerManager.PARTIAL_WAKE_LOCK, "com.king250.kirafan.service.ConnectorService:startService")
-                    wakeLock.acquire()
-                    try {
-                        api.protected.keepSession().execute()
-                    } catch (e: Exception) {
-                        e.printStackTrace()
-                    }
-                    delay(60000)
-                }
-            }
             val mainIntent = Intent(this@ConnectorService, MainActivity::class.java)
             mainIntent.flags = Intent.FLAG_ACTIVITY_SINGLE_TOP or Intent.FLAG_ACTIVITY_REORDER_TO_FRONT
             val backIntent = PendingIntent.getActivity(
@@ -158,10 +137,6 @@ class ConnectorService : VpnService(), ServiceHandler {
         stopSelf()
         try {
             fd.close()
-            timer.cancel()
-            if (wakeLock.isHeld) {
-                wakeLock.release()
-            }
         }
         catch (e: Exception) {
             e.printStackTrace()
