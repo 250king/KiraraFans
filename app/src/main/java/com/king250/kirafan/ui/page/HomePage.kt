@@ -6,6 +6,7 @@ import android.content.pm.PackageManager
 import android.os.Build
 import androidx.compose.animation.AnimatedVisibility
 import androidx.compose.animation.Crossfade
+import androidx.compose.foundation.background
 import androidx.compose.foundation.layout.*
 import androidx.compose.foundation.rememberScrollState
 import androidx.compose.foundation.shape.CircleShape
@@ -15,6 +16,7 @@ import androidx.compose.runtime.*
 import androidx.compose.ui.Alignment
 import androidx.compose.ui.Modifier
 import androidx.compose.ui.draw.clip
+import androidx.compose.ui.graphics.Color
 import androidx.compose.ui.res.painterResource
 import androidx.compose.ui.unit.dp
 import androidx.core.app.NotificationManagerCompat
@@ -36,7 +38,7 @@ import com.king250.kirafan.util.ClientUtil
 import com.king250.kirafan.api.HttpApi
 import com.king250.kirafan.ui.activity.HelpActivity
 import com.king250.kirafan.util.IpcUtil
-import com.king250.kirafan.util.StringUtil
+import com.king250.kirafan.util.SecurityUtil
 import kotlinx.coroutines.flow.firstOrNull
 import kotlinx.coroutines.flow.map
 import kotlinx.coroutines.launch
@@ -63,286 +65,302 @@ fun HomePage(a: MainActivity) {
 
     a.m.setSnackBarHostState(snackBarHostState)
 
-    Scaffold(
-        snackbarHost = {
-            SnackbarHost(hostState = snackBarHostState)
-        },
-        topBar = {
-            TopAppBar(
-                title = {
-                    Text(a.getString(R.string.app_name))
-                }
-            )
-        }
-    ) { innerPadding ->
-        Crossfade(targetState = loading, label = "") { loading ->
-            if (loading) {
-                Column(
-                    modifier = Modifier
-                        .padding(innerPadding)
-                        .fillMaxSize(),
-                    verticalArrangement = Arrangement.Center,
-                    horizontalAlignment = Alignment.CenterHorizontally
-                ) {
-                    CircularProgressIndicator()
-                }
-            } else {
-                val text = if (Env.HEIGHT_ANDROID) {
-                    "Android 14+建议阅读"
+    Box(
+        modifier = Modifier
+            .fillMaxSize()
+            .background(MaterialTheme.colorScheme.background)
+    ) {
+        /*
+        Image(
+            painter = painterResource(R.drawable.test),
+            contentDescription = null,
+            alignment = Alignment.BottomEnd,
+            contentScale = ContentScale.Fit,
+            modifier = Modifier.fillMaxSize()
+        )
+        */
+        Scaffold(
+            containerColor = Color.Transparent,
+            snackbarHost = {
+                SnackbarHost(hostState = snackBarHostState)
+            },
+            topBar = {
+                TopAppBar(
+                    title = {
+                        Text(a.getString(R.string.app_name))
+                    }
+                )
+            }
+        ) { innerPadding ->
+            Crossfade(targetState = loading, label = "") { loading ->
+                if (loading) {
+                    Column(
+                        modifier = Modifier
+                            .padding(innerPadding)
+                            .fillMaxSize(),
+                        verticalArrangement = Arrangement.Center,
+                        horizontalAlignment = Alignment.CenterHorizontally
+                    ) {
+                        CircularProgressIndicator()
+                    }
                 } else {
-                    "有任何问题可查看"
-                }
-                Column(
-                    Modifier
-                        .padding(innerPadding)
-                        .verticalScroll(scrollState)
-                ) {
-                    AnimatedVisibility(update) {
+                    val text = if (Env.HEIGHT_ANDROID) {
+                        "Android 14+建议阅读"
+                    } else {
+                        "有任何问题可查看"
+                    }
+                    Column(
+                        Modifier
+                            .padding(innerPadding)
+                            .verticalScroll(scrollState)
+                    ) {
+                        AnimatedVisibility(update) {
+                            CardButton(
+                                icon = {
+                                    Icon(
+                                        modifier = Modifier.size(24.dp),
+                                        painter = painterResource(R.drawable.update),
+                                        contentDescription = null
+                                    )
+                                },
+                                onClick = {
+                                    ClientUtil.open(a, "https://2lnk.top/mitmL")
+                                },
+                                title = "有新版本发布了",
+                                description = "点击即可下载最新版"
+                            )
+                        }
                         CardButton(
                             icon = {
                                 Icon(
                                     modifier = Modifier.size(24.dp),
-                                    painter = painterResource(R.drawable.update),
+                                    painter = painterResource(R.drawable.phone),
                                     contentDescription = null
                                 )
                             },
                             onClick = {
-                                ClientUtil.open(a, "https://250king.top/s/bdZ4pT9jV0")
+                                val intent = Intent(a, InfoActivity::class.java)
+                                a.startActivity(intent)
                             },
-                            title = "有新版本发布了",
-                            description = "点击即可下载最新版"
+                            title = "Android ${Build.VERSION.RELEASE}",
+                            description = "点击可查看设备详情"
                         )
-                    }
-                    CardButton(
-                        icon = {
-                            Icon(
-                                modifier = Modifier.size(24.dp),
-                                painter = painterResource(R.drawable.phone),
-                                contentDescription = null
-                            )
-                        },
-                        onClick = {
-                            val intent = Intent(a, InfoActivity::class.java)
-                            a.startActivity(intent)
-                        },
-                        title = "Android ${Build.VERSION.RELEASE}",
-                        description = "点击可查看设备详情"
-                    )
-                    CardButton(
-                        icon = {
-                            if (user == null) {
-                                Icon(
-                                    modifier = Modifier.size(24.dp),
-                                    painter = painterResource(R.drawable.person),
-                                    contentDescription = null
-                                )
-                            } else {
-                                AsyncImage(
-                                    modifier = Modifier
-                                        .clip(CircleShape)
-                                        .size(48.dp),
-                                    model = ImageRequest
-                                        .Builder(a)
-                                        .data(user!!.avatar)
-                                        .apply {
-                                            crossfade(true)
-                                        }
-                                        .build(),
-                                    contentDescription = null
-                                )
-                            }
-                        },
-                        onClick = {
-                            if (!disabledLogin) {
-                                if (user == null) {
-                                    a.challenge = StringUtil.generateCodeVerifier()
-                                    val redirectUri = URLEncoder.encode(Env.REDIRECT_URI, "utf-8")
-                                    val url = Env.AUTHORIZE_URI +
-                                            "?response_type=code" +
-                                            "&client_id=${Env.CLIENT_ID}" +
-                                            "&redirect_uri=${redirectUri}" +
-                                            "&code_challenge_method=S256" +
-                                            "&code_challenge=${StringUtil.generateCodeChallenge(a.challenge!!)}"
-                                    ClientUtil.open(a, url)
-                                } else {
-                                    disabledLogin = true
-                                    scope.launch {
-                                        val token = a.dataStore.data
-                                            .map { it[stringPreferencesKey("refresh_token")] }
-                                            .firstOrNull() ?: ""
-                                        HttpApi.oauth.logout(token)
-                                            .enqueue(object : Callback<Unit> {
-                                                override fun onResponse(
-                                                    p0: Call<Unit>,
-                                                    p1: Response<Unit>
-                                                ) {
-                                                    scope.launch {
-                                                        a.dataStore.edit {
-                                                            it.remove(booleanPreferencesKey("agreed"))
-                                                        }
-                                                        a.logout(false)
-                                                        disabledLogin = false
-                                                    }
-                                                }
-
-                                                override fun onFailure(
-                                                    p0: Call<Unit>,
-                                                    p1: Throwable
-                                                ) {
-                                                    scope.launch {
-                                                        snackBarHostState.showSnackbar("网络好像不太好哦~")
-                                                        disabledLogin = false
-                                                    }
-                                                }
-                                            })
-                                    }
-                                }
-                            }
-                        },
-                        title = user?.name ?: "未登录",
-                        description = "点击${
-                            if (user == null) {
-                                "进行登录"
-                            } else {
-                                "退出登录"
-                            }
-                        }",
-                    )
-                    AnimatedVisibility(user != null) {
                         CardButton(
                             icon = {
-                                if (disabledConnect) {
-                                    CircularProgressIndicator()
-                                } else {
+                                if (user == null) {
                                     Icon(
                                         modifier = Modifier.size(24.dp),
-                                        painter = painterResource(R.drawable.cable),
+                                        painter = painterResource(R.drawable.person),
+                                        contentDescription = null
+                                    )
+                                } else {
+                                    AsyncImage(
+                                        modifier = Modifier
+                                            .clip(CircleShape)
+                                            .size(48.dp),
+                                        model = ImageRequest
+                                            .Builder(a)
+                                            .data(user!!.avatar)
+                                            .apply {
+                                                crossfade(true)
+                                            }
+                                            .build(),
                                         contentDescription = null
                                     )
                                 }
                             },
                             onClick = {
-                                if (!disabledConnect) {
-                                    if (connected) {
-                                        IpcUtil.toService(a, Env.STOP_SERVICE)
+                                if (!disabledLogin) {
+                                    if (user == null) {
+                                        a.challenge = SecurityUtil.generateCodeVerifier()
+                                        val redirectUri = URLEncoder.encode(Env.REDIRECT_URI, "utf-8")
+                                        val url = Env.AUTHORIZE_URI +
+                                                "?response_type=code" +
+                                                "&client_id=${Env.CLIENT_ID}" +
+                                                "&redirect_uri=${redirectUri}" +
+                                                "&code_challenge_method=S256" +
+                                                "&code_challenge=${SecurityUtil.generateCodeChallenge(a.challenge!!)}"
+                                        ClientUtil.open(a, url)
                                     } else {
-                                        if (Build.VERSION.SDK_INT >= Build.VERSION_CODES.TIRAMISU) {
-                                            val permission = Manifest.permission.POST_NOTIFICATIONS
-                                            val result = ContextCompat.checkSelfPermission(a, permission)
-                                            if (result == PackageManager.PERMISSION_DENIED) {
-                                                a.permissionActivity.launch(permission)
-                                            } else {
-                                                a.connect()
-                                            }
-                                        } else {
-                                            val enabled = NotificationManagerCompat.from(a)
-                                                .areNotificationsEnabled()
-                                            if (!enabled) {
-                                                a.enableNotification()
-                                            } else {
-                                                a.connect()
-                                            }
+                                        disabledLogin = true
+                                        scope.launch {
+                                            val token = a.dataStore.data
+                                                .map { it[stringPreferencesKey("refresh_token")] }
+                                                .firstOrNull() ?: ""
+                                            HttpApi.oauth.logout(token)
+                                                .enqueue(object : Callback<Unit> {
+                                                    override fun onResponse(
+                                                        p0: Call<Unit>,
+                                                        p1: Response<Unit>
+                                                    ) {
+                                                        scope.launch {
+                                                            a.dataStore.edit {
+                                                                it.remove(booleanPreferencesKey("agreed"))
+                                                            }
+                                                            a.logout(false)
+                                                            disabledLogin = false
+                                                        }
+                                                    }
+
+                                                    override fun onFailure(
+                                                        p0: Call<Unit>,
+                                                        p1: Throwable
+                                                    ) {
+                                                        scope.launch {
+                                                            snackBarHostState.showSnackbar("网络好像不太好哦~")
+                                                            disabledLogin = false
+                                                        }
+                                                    }
+                                                })
                                         }
                                     }
                                 }
                             },
-                            title = "连接至专网",
-                            description = if (connected) {
-                                "已连接"
-                            } else {
-                                "未连接"
-                            }
-                        )
-                    }
-                    AnimatedVisibility(connected) {
-                        CardButton(
-                            icon = {
-                                Icon(
-                                    modifier = Modifier.size(24.dp),
-                                    painter = painterResource(R.drawable.lan),
-                                    contentDescription = null
-                                )
-                            },
-                            onClick = {
-                                a.d.openSelector(true)
-                            },
-                            title = "节点",
-                            description = endpoints[selectedEndpoint].name
-                        )
-                    }
-                    AnimatedVisibility(connected) {
-                        CardButton(
-                            icon = {
-                                Icon(
-                                    modifier = Modifier.size(24.dp),
-                                    painter = painterResource(R.drawable.controller),
-                                    contentDescription = null
-                                )
-                            },
-                            onClick = {
-                                if (version == null) {
-                                    if (Env.HEIGHT_ANDROID) {
-                                        a.d.openSystem(true)
-                                    } else {
-                                        a.install(Env.TARGET_PACKAGE)
-                                    }
+                            title = user?.name ?: "未登录",
+                            description = "点击${
+                                if (user == null) {
+                                    "进行登录"
                                 } else {
-                                    if (Env.TARGET_PACKAGE == "com.aniplex.kirarafantasia") {
-                                        if (version != "3.6.0") {
-                                            a.d.openGame(true)
-                                        } else if (ClientUtil.isRooted(a)) {
-                                            a.d.openRoot(true)
-                                        } else if (ClientUtil.isDebug(a.contentResolver)) {
-                                            a.d.openUsb(true)
+                                    "退出登录"
+                                }
+                            }",
+                        )
+                        AnimatedVisibility(user != null) {
+                            CardButton(
+                                icon = {
+                                    if (disabledConnect) {
+                                        CircularProgressIndicator()
+                                    } else {
+                                        Icon(
+                                            modifier = Modifier.size(24.dp),
+                                            painter = painterResource(R.drawable.cable),
+                                            contentDescription = null
+                                        )
+                                    }
+                                },
+                                onClick = {
+                                    if (!disabledConnect) {
+                                        if (connected) {
+                                            IpcUtil.toService(a, Env.STOP_SERVICE)
+                                        } else {
+                                            if (Build.VERSION.SDK_INT >= Build.VERSION_CODES.TIRAMISU) {
+                                                val permission = Manifest.permission.POST_NOTIFICATIONS
+                                                val result = ContextCompat.checkSelfPermission(a, permission)
+                                                if (result == PackageManager.PERMISSION_DENIED) {
+                                                    a.permissionActivity.launch(permission)
+                                                } else {
+                                                    a.connect()
+                                                }
+                                            } else {
+                                                val enabled = NotificationManagerCompat.from(a)
+                                                    .areNotificationsEnabled()
+                                                if (!enabled) {
+                                                    a.enableNotification()
+                                                } else {
+                                                    a.connect()
+                                                }
+                                            }
+                                        }
+                                    }
+                                },
+                                title = "连接至专网",
+                                description = if (connected) {
+                                    "已连接"
+                                } else {
+                                    "未连接"
+                                }
+                            )
+                        }
+                        AnimatedVisibility(connected) {
+                            CardButton(
+                                icon = {
+                                    Icon(
+                                        modifier = Modifier.size(24.dp),
+                                        painter = painterResource(R.drawable.lan),
+                                        contentDescription = null
+                                    )
+                                },
+                                onClick = {
+                                    a.d.openSelector(true)
+                                },
+                                title = "节点",
+                                description = endpoints[selectedEndpoint].name
+                            )
+                        }
+                        AnimatedVisibility(connected) {
+                            CardButton(
+                                icon = {
+                                    Icon(
+                                        modifier = Modifier.size(24.dp),
+                                        painter = painterResource(R.drawable.controller),
+                                        contentDescription = null
+                                    )
+                                },
+                                onClick = {
+                                    if (version == null) {
+                                        if (Env.HEIGHT_ANDROID) {
+                                            a.d.openSystem(true)
+                                        } else {
+                                            a.install(Env.TARGET_PACKAGE)
+                                        }
+                                    } else {
+                                        if (Env.TARGET_PACKAGE == "com.aniplex.kirarafantasia") {
+                                            if (version != "3.6.0") {
+                                                a.d.openGame(true)
+                                            } else if (ClientUtil.isDebug(a.contentResolver) && !Env.HEIGHT_ANDROID) {
+                                                a.d.openUsb(true)
+                                            } else if (ClientUtil.isRooted(a) && !Env.HEIGHT_ANDROID) {
+                                                a.d.openRoot(true)
+                                            } else {
+                                                val intent =
+                                                    a.packageManager.getLaunchIntentForPackage(Env.TARGET_PACKAGE)
+                                                a.startActivity(intent)
+                                            }
                                         } else {
                                             val intent =
                                                 a.packageManager.getLaunchIntentForPackage(Env.TARGET_PACKAGE)
                                             a.startActivity(intent)
                                         }
-                                    } else {
-                                        val intent =
-                                            a.packageManager.getLaunchIntentForPackage(Env.TARGET_PACKAGE)
-                                        a.startActivity(intent)
                                     }
+                                },
+                                title = version ?: "未安装",
+                                description = if (version == null) {
+                                    "点按可安装"
+                                } else {
+                                    "启动游戏"
                                 }
+                            )
+                        }
+                        CardButton(
+                            icon = {
+                                Icon(
+                                    modifier = Modifier.size(24.dp),
+                                    painter = painterResource(R.drawable.guide),
+                                    contentDescription = null
+                                )
                             },
-                            title = version ?: "未安装",
-                            description = if (version == null) {
-                                "点按可安装"
-                            } else {
-                                "启动游戏"
-                            }
+                            onClick = {
+                                val intent = Intent(a, HelpActivity::class.java)
+                                a.startActivity(intent)
+                            },
+                            title = "Q&A",
+                            description = text
+                        )
+                        CardButton(
+                            icon = {
+                                Icon(
+                                    modifier = Modifier.size(24.dp),
+                                    painter = painterResource(R.drawable.info),
+                                    contentDescription = null
+                                )
+                            },
+                            onClick = {
+                                val intent = Intent(a, AboutActivity::class.java)
+                                a.startActivity(intent)
+                            },
+                            title = "关于"
                         )
                     }
-                    CardButton(
-                        icon = {
-                            Icon(
-                                modifier = Modifier.size(24.dp),
-                                painter = painterResource(R.drawable.guide),
-                                contentDescription = null
-                            )
-                        },
-                        onClick = {
-                            val intent = Intent(a, HelpActivity::class.java)
-                            a.startActivity(intent)
-                        },
-                        title = "Q&A",
-                        description = text
-                    )
-                    CardButton(
-                        icon = {
-                            Icon(
-                                modifier = Modifier.size(24.dp),
-                                painter = painterResource(R.drawable.info),
-                                contentDescription = null
-                            )
-                        },
-                        onClick = {
-                            val intent = Intent(a, AboutActivity::class.java)
-                            a.startActivity(intent)
-                        },
-                        title = "关于"
-                    )
                 }
             }
         }

@@ -20,13 +20,13 @@ object Env {
 
     const val CLIENT_ID = "wimwBO8uyk6DODegsIbdMMtm88baBwYqZkyyOVPO"
 
-    const val RELEASE_API = "https://api.github.com/repos/gd1000m/Kirara-Repo/releases/latest"
-
     const val SERVICE_CHANNEL = "com.king250.kirafan.service.ConnectorVpnService"
 
     const val NOTIFICATION_CHANNEL = "com.king.kirafan.Notification"
 
     const val UI_CHANNEL = "com.king250.kirafan.ui.activity.MainActivity"
+
+    const val KEY_ALIAS = "com.king250.kirafan.ui.activity.ConfigKey"
 
     const val SERVICE_STARTED = 0
 

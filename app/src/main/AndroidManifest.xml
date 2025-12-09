@@ -1,9 +1,13 @@
 <?xml version="1.0" encoding="utf-8"?>
-<manifest xmlns:android="http://schemas.android.com/apk/res/android" >
+<manifest xmlns:android="http://schemas.android.com/apk/res/android"
+    xmlns:tools="http://schemas.android.com/tools">
+
     <uses-permission android:name="android.permission.INTERNET" />
-    <uses-permission android:name="android.permission.FOREGROUND_SERVICE" />
     <uses-permission android:name="android.permission.FOREGROUND_SERVICE_SPECIAL_USE" />
     <uses-permission android:name="android.permission.POST_NOTIFICATIONS" />
+    <uses-permission
+        android:name="android.permission.FOREGROUND_SERVICE"
+        tools:ignore="ForegroundServicesPolicy" />
 
     <queries>
         <package android:name="com.aniplex.kirarafantasia" />
@@ -19,16 +23,7 @@
         android:label="@string/app_name"
         android:roundIcon="@mipmap/ic_launcher_round"
         android:supportsRtl="true"
-        android:theme="@style/Theme.KiraraFans" >
-        <meta-data
-            android:name="com.gcloud.group"
-            android:value="SparkleFantasia CN" />
-        <meta-data
-            android:name="com.gcloud.oid"
-            android:value="85b98317-c1ff-4b4a-9720-55edc3f676e5" />
-        <meta-data
-            android:name="com.gcloud.gclient.version"
-            android:value="2025.06" />
+        android:theme="@style/Theme.KiraraFans">
         <meta-data
             android:name="io.sentry.dsn"
             android:value="https://d0f40e4c0d00d1d4cdb170bdff142f58@sentry.kirafan.xyz/4508992580354048" />
@@ -82,15 +77,17 @@
             android:name=".ui.activity.MainActivity"
             android:exported="true"
             android:launchMode="singleTask"
-            android:theme="@style/Theme.LaunchTheme" >
+            android:theme="@style/Theme.LaunchTheme">
             <intent-filter>
                 <action android:name="android.intent.action.MAIN" />
                 <category android:name="android.intent.category.LAUNCHER" />
             </intent-filter>
             <intent-filter>
                 <action android:name="android.intent.action.VIEW" />
+
                 <category android:name="android.intent.category.DEFAULT" />
                 <category android:name="android.intent.category.BROWSABLE" />
+
                 <data
                     android:host="callback"
                     android:path="/login"
@@ -102,7 +99,8 @@
             android:name=".service.ConnectorService"
             android:exported="true"
             android:foregroundServiceType="specialUse"
-            android:permission="android.permission.BIND_VPN_SERVICE" >
+            android:permission="android.permission.BIND_VPN_SERVICE"
+            tools:ignore="VpnServicePolicy">
             <intent-filter>
                 <action android:name="android.net.VpnService" />
             </intent-filter>

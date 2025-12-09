@@ -1,24 +1,19 @@
 package com.king250.kirafan.api
 
-import com.king250.kirafan.model.data.ChangeOperation
+import com.king250.kirafan.model.data.Encrypted
+import com.king250.kirafan.model.data.Session
 import com.king250.kirafan.model.data.Endpoint
+import com.king250.kirafan.model.data.Items
 import com.king250.kirafan.model.data.User
-import okhttp3.ResponseBody
 import retrofit2.Call
 import retrofit2.http.*
 
 interface ProtectedService {
-    @GET("article/terms")
-    fun getTerms(): Call<ResponseBody>
-
-    @GET("article/help")
-    fun getHelp(): Call<ResponseBody>
-
     @GET("endpoint")
-    fun getEndpoints() : Call<List<Endpoint>>
+    fun getEndpoints() : Call<Items<Endpoint>>
 
     @POST("session")
-    fun changeEndpoint(@Body payload: ChangeOperation) : Call<ResponseBody>
+    fun createSession(@Body payload: Session) : Call<Encrypted>
 
     @DELETE("session")
     fun revokeSession() : Call<Unit>

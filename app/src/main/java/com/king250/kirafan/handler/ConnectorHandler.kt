@@ -9,16 +9,18 @@ import androidx.core.content.ContextCompat
 import com.king250.kirafan.Env
 import com.king250.kirafan.ui.activity.MainActivity
 import com.king250.kirafan.api
-import com.king250.kirafan.model.data.ChangeOperation
+import com.king250.kirafan.model.data.Encrypted
+import com.king250.kirafan.model.data.Session
 import com.king250.kirafan.model.data.Endpoint
+import com.king250.kirafan.model.data.Items
 import com.king250.kirafan.service.ConnectorService
 import com.king250.kirafan.util.ClientUtil
 import com.king250.kirafan.util.IpcUtil
+import com.king250.kirafan.util.SecurityUtil
 import go.Seq
 import libv2ray.CoreCallbackHandler
 import libv2ray.Libv2ray
 import libv2ray.CoreController
-import okhttp3.ResponseBody
 import retrofit2.Call
 import retrofit2.Callback
 import retrofit2.Response
@@ -75,16 +77,38 @@ object ConnectorHandler {
         if (coreController.isRunning) {
             return
         }
-        api.protected.getEndpoints().enqueue(object : Callback<List<Endpoint>> {
-            override fun onResponse(call: Call<List<Endpoint>>, response: Response<List<Endpoint>>) {
-                context.m.setEndpoints(response.body()!!)
-                if (context.m.selectedEndpoint.value > response.body()!!.count()) {
+        api.protected.getEndpoints().enqueue(object : Callback<Items<Endpoint>> {
+            override fun onResponse(call: Call<Items<Endpoint>>, response: Response<Items<Endpoint>>) {
+                if (!response.isSuccessful) {
+                    context.m.showSnackBar("服务器爆炸了！")
+                    IpcUtil.toUI(context, Env.SERVICE_STOPPED)
+                    return
+                }
+                context.m.setEndpoints(response.body()!!.items)
+                if (context.m.selectedEndpoint.value > response.body()!!.total) {
                     context.m.setSelectedEndpoint(0)
                 }
-                val endpoint = response.body()!![context.m.selectedEndpoint.value].region
-                api.protected.changeEndpoint(ChangeOperation(endpoint)).enqueue(object : Callback<ResponseBody> {
-                    override fun onResponse(call: Call<ResponseBody?>, t: Response<ResponseBody?>) {
-                        config = t.body()!!.string()
+                val endpoint = response.body()!!.items[context.m.selectedEndpoint.value].region
+                val key = SecurityUtil.getPublicKey() ?: return
+                api.protected.createSession(Session(endpoint, key)).enqueue(object : Callback<Encrypted> {
+                    override fun onResponse(call: Call<Encrypted?>, t: Response<Encrypted?>) {
+                        if (!t.isSuccessful) {
+                            when(t.code()) {
+                                401 -> {
+                                    context.logout()
+                                }
+                                403 -> {
+                                    context.m.showSnackBar("你好像不在群组里，或者被ban了（")
+                                }
+                                else -> {
+                                    context.m.showSnackBar("服务器出了点小差（")
+                                }
+                            }
+                            IpcUtil.toUI(context, Env.SERVICE_STOPPED)
+                            return
+                        }
+                        val data = t.body()!!
+                        config = SecurityUtil.decrypt(data.key, data.iv, data.data) ?: return
                         val intent = Intent(context, ConnectorService::class.java)
                         if (Build.VERSION.SDK_INT > Build.VERSION_CODES.N_MR1) {
                             context.startForegroundService(intent)
@@ -94,13 +118,13 @@ object ConnectorHandler {
                         }
                     }
 
-                    override fun onFailure(call: Call<ResponseBody?>, t: Throwable) {
+                    override fun onFailure(call: Call<Encrypted?>, t: Throwable) {
                         IpcUtil.toUI(context, Env.SERVICE_STOPPED)
                     }
                 })
             }
 
-            override fun onFailure(call: Call<List<Endpoint>>, t: Throwable) {
+            override fun onFailure(call: Call<Items<Endpoint>>, t: Throwable) {
                 IpcUtil.toUI(context, Env.SERVICE_STOPPED)
             }
         })
@@ -111,15 +135,10 @@ object ConnectorHandler {
             return false
         }
         val service = control?.get()?.getService() ?: return false
+        IpcUtil.toUI(service, Env.SERVICE_STARTED)
         try {
             val filter = IntentFilter(Env.SERVICE_CHANNEL)
-            val flags = if (Build.VERSION.SDK_INT >= Build.VERSION_CODES.TIRAMISU) {
-                ContextCompat.RECEIVER_EXPORTED
-            }
-            else {
-                ContextCompat.RECEIVER_NOT_EXPORTED
-            }
-            ContextCompat.registerReceiver(service, receiver, filter, flags)
+            ContextCompat.registerReceiver(service, receiver, filter, ContextCompat.RECEIVER_NOT_EXPORTED)
             coreController.startLoop(config)
         }
         catch (e: Exception) {
@@ -131,7 +150,6 @@ object ConnectorHandler {
             IpcUtil.toUI(service, Env.SERVICE_STOPPED)
             return false
         }
-        IpcUtil.toUI(service, Env.SERVICE_STARTED)
         return true
     }
 
@@ -145,13 +163,18 @@ object ConnectorHandler {
                 e.printStackTrace()
             }
         }
-        IpcUtil.toUI(service, Env.SERVICE_STOPPED)
+        api.protected.revokeSession().enqueue(object : Callback<Unit> {
+            override fun onResponse(call: Call<Unit?>, response: Response<Unit?>) {}
+
+            override fun onFailure(call: Call<Unit?>, t: Throwable) {}
+        })
         try {
             service.unregisterReceiver(receiver)
         }
         catch (e: Exception) {
             e.printStackTrace()
         }
+        IpcUtil.toUI(service, Env.SERVICE_STOPPED)
         return true
     }
 }

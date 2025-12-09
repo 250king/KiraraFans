@@ -138,12 +138,10 @@ class MainView(application: Application) : AndroidViewModel(application) {
                     showSnackBar("无法获得最新版本状态（")
                     return
                 }
-                val release = p1.body()!!.version.split(".").map { it.toInt() }
-                val app = BuildConfig.VERSION_NAME.split(".").map { it.toInt() }
-                app.forEachIndexed { index, number ->
-                    if (release[index] > number) {
-                        _update.value = true
-                    }
+                val release = p1.body()!!.code
+                val app = BuildConfig.VERSION_CODE
+                if (release > app) {
+                    _update.value = true
                 }
             }
 

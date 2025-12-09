@@ -17,6 +17,7 @@ import androidx.compose.material3.Text
 import androidx.compose.runtime.Composable
 import androidx.compose.ui.Alignment
 import androidx.compose.ui.Modifier
+import androidx.compose.ui.draw.alpha
 import androidx.compose.ui.unit.dp
 
 @Composable
@@ -27,13 +28,17 @@ fun CardButton(
     description: String? = null,
 ) {
     Card(
-        modifier = Modifier.fillMaxWidth().padding(start = 16.dp, end = 16.dp, bottom = 16.dp),
+        modifier = Modifier
+            .fillMaxWidth()
+            .padding(start = 16.dp, end = 16.dp, bottom = 16.dp).alpha(0.9f),
         shape = RoundedCornerShape(30.dp),
         onClick = onClick
     ) {
         Row(Modifier.padding(16.dp)) {
             Box(
-                modifier = Modifier.size(48.dp).background(MaterialTheme.colorScheme.inversePrimary, CircleShape),
+                modifier = Modifier
+                    .size(48.dp)
+                    .background(MaterialTheme.colorScheme.inversePrimary, CircleShape),
                 contentAlignment = Alignment.Center
             ) {
                 icon()

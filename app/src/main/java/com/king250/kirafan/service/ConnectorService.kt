@@ -1,5 +1,6 @@
 package com.king250.kirafan.service
 
+import android.annotation.SuppressLint
 import android.app.PendingIntent
 import android.app.Service
 import android.content.Intent
@@ -7,7 +8,6 @@ import android.net.VpnService
 import android.os.Build
 import android.os.ParcelFileDescriptor
 import android.os.StrictMode
-import androidx.annotation.Keep
 import androidx.core.app.NotificationCompat
 import com.king250.kirafan.Env
 import com.king250.kirafan.R
@@ -21,6 +21,7 @@ import kotlinx.coroutines.launch
 import java.io.File
 import java.lang.ref.SoftReference
 
+@SuppressLint("VpnServicePolicy")
 class ConnectorService : VpnService(), ServiceHandler {
     private lateinit var fd: ParcelFileDescriptor
 
@@ -30,13 +31,12 @@ class ConnectorService : VpnService(), ServiceHandler {
         System.loadLibrary("hev-socks5-tunnel")
     }
 
-    @Suppress("FunctionName", "unused")
+    @Suppress("FunctionName")
     private external fun TProxyStartService(configPath: String, fd: Int)
 
     @Suppress("FunctionName")
     private external fun TProxyStopService()
 
-    @Keep
     @Suppress("FunctionName", "unused")
     private external fun TProxyGetStats(): LongArray
 
@@ -85,14 +85,15 @@ class ConnectorService : VpnService(), ServiceHandler {
         }
         try {
             fd.close()
-        }
-        catch (_: Exception) {
+        } catch (_: Exception) {
+            /* empty */
         }
         try {
             fd = builder.establish()!!
             runTun2socks()
-            val mainIntent = Intent(this@ConnectorService, MainActivity::class.java)
-            mainIntent.flags = Intent.FLAG_ACTIVITY_SINGLE_TOP or Intent.FLAG_ACTIVITY_REORDER_TO_FRONT
+            val mainIntent = Intent(this@ConnectorService, MainActivity::class.java).apply {
+                flags = Intent.FLAG_ACTIVITY_SINGLE_TOP or Intent.FLAG_ACTIVITY_REORDER_TO_FRONT
+            }
             val backIntent = PendingIntent.getActivity(
                 this@ConnectorService,
                 0,
@@ -108,8 +109,7 @@ class ConnectorService : VpnService(), ServiceHandler {
                 setOngoing(true)
             }.build()
             startForeground(1, notification)
-        }
-        catch (e: Exception) {
+        } catch (e: Exception) {
             e.printStackTrace()
             stopV2Ray()
         }
@@ -127,16 +127,14 @@ class ConnectorService : VpnService(), ServiceHandler {
         try {
             TProxyStopService()
             tunnel.cancel()
-        }
-        catch (e: Exception) {
+        } catch (e: Exception) {
             e.printStackTrace()
         }
         ConnectorHandler.stopCoreLoop()
         stopSelf()
         try {
             fd.close()
-        }
-        catch (e: Exception) {
+        } catch (e: Exception) {
             e.printStackTrace()
         }
     }
@@ -147,14 +145,12 @@ class ConnectorService : VpnService(), ServiceHandler {
                 try {
                     val dir = getExternalFilesDir("assets")?.absolutePath
                     TProxyStartService(File(dir, "tunnel.yaml").absolutePath, fd.fd)
-                }
-                catch (e: Exception) {
+                } catch (e: Exception) {
                     e.printStackTrace()
                 }
             }
             tunnel.start()
-        }
-        catch (e: Exception) {
+        } catch (e: Exception) {
             e.printStackTrace()
             stopService()
         }

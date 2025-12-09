@@ -38,7 +38,7 @@ fun AboutPage(a: AboutActivity) {
             a.startActivity(intent)
         },
         About("获得最新版本") {
-            ClientUtil.open(a, "https://250king.top/s/bdZ4pT9jV0")
+            ClientUtil.open(a, "https://2lnk.top/mitmL")
         },
         About("一起来玩") {
             ClientUtil.open(a, "https://discord.gg/YmbbxDsbNB")

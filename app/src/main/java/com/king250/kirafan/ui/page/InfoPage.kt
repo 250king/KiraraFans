@@ -40,13 +40,13 @@ fun InfoPage(a: InfoActivity) {
                 "可用"
             }
             else {
-                "不可用"
+                "未检测到"
             }
         ),
         Info("厂商", Build.MANUFACTURER),
         Info("品牌", Build.BRAND),
         Info("型号", Build.MODEL),
-        Info("基板", Build.BOARD),
+        Info("机型代号", Build.BOARD),
         Info("设备指纹", Build.FINGERPRINT),
     )
 
