@@ -32,11 +32,12 @@ import com.king250.kirafan.handler.ConnectorHandler
 import com.king250.kirafan.model.data.Token
 import com.king250.kirafan.model.view.DialogView
 import com.king250.kirafan.model.view.MainView
-import com.king250.kirafan.ui.page.AbiWarning
+import com.king250.kirafan.ui.page.Warning
 import com.king250.kirafan.ui.page.HomePage
 import com.king250.kirafan.ui.theme.KiraraFansTheme
 import com.king250.kirafan.util.ClientUtil
 import com.king250.kirafan.util.IpcUtil
+import com.king250.kirafan.util.SecurityUtil
 import kotlinx.coroutines.delay
 import kotlinx.coroutines.flow.firstOrNull
 import kotlinx.coroutines.flow.map
@@ -76,7 +77,8 @@ class MainActivity : ComponentActivity() {
             "arm" -> "armeabi-v7a"
             else -> File(applicationInfo.nativeLibraryDir).name
         }
-        if (Env.DEVICE_ABI == apkAbi) {
+        val tee = SecurityUtil.initKeyStore()
+        if (Env.DEVICE_ABI == apkAbi && tee) {
             vpnPermissionActivity = registerForActivityResult(ActivityResultContracts.StartActivityForResult()) {
                 if (it.resultCode == RESULT_OK) {
                     connect()
@@ -165,7 +167,7 @@ class MainActivity : ComponentActivity() {
         else {
             setContent {
                 KiraraFansTheme {
-                    AbiWarning(this)
+                    Warning(this, !tee)
                 }
             }
             compatSplashScreen.setKeepOnScreenCondition{false}

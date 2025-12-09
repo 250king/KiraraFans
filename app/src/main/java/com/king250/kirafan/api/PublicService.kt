@@ -6,7 +6,7 @@ import retrofit2.Call
 import retrofit2.http.GET
 
 interface PublicService {
-    @GET("release")
+    @GET("version")
     fun getRelease(): Call<Release>
 
     @GET("article/terms")
