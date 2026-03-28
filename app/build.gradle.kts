@@ -8,14 +8,15 @@ plugins {
 
 android {
     namespace = "com.king250.kirafan"
-    compileSdk = 36
+    compileSdk = 37
 
     defaultConfig {
+
         applicationId = "com.king250.kirafan"
         minSdk = 24
-        targetSdk = 36
-        versionCode = 40900
-        versionName = "4.9.0"
+        targetSdk = 37
+        versionCode = 41000
+        versionName = "4.10.0"
         testInstrumentationRunner = "androidx.test.runner.AndroidJUnitRunner"
         vectorDrawables {
             useSupportLibrary = true
@@ -30,7 +31,6 @@ android {
             isUniversalApk = true
         }
     }
-
     applicationVariants.all {
         this.outputs
             .map { it as com.android.build.gradle.internal.api.ApkVariantOutputImpl }
@@ -87,29 +87,33 @@ aboutLibraries {
 
 dependencies {
     implementation(fileTree(mapOf("dir" to "libs", "include" to listOf("*.aar", "*.jar"))))
-    implementation(platform("androidx.compose:compose-bom:2025.12.00"))
-    implementation("androidx.activity:activity-compose:1.12.1")
-    implementation("androidx.browser:browser:1.9.0")
-    implementation("androidx.core:core-ktx:1.17.0")
+    implementation(platform("androidx.compose:compose-bom:2026.03.01"))
+    implementation(platform("io.ktor:ktor-bom:3.4.1"))
+    implementation("androidx.activity:activity-compose:1.13.0")
+    implementation("androidx.browser:browser:1.10.0")
+    implementation("androidx.core:core-ktx:1.18.0")
     implementation("androidx.core:core-splashscreen:1.2.0")
     implementation("androidx.compose.ui:ui")
     implementation("androidx.compose.ui:ui-graphics")
     implementation("androidx.compose.material3:material3")
-    implementation("androidx.datastore:datastore-preferences:1.2.0")
+    implementation("androidx.datastore:datastore-preferences:1.2.1")
     implementation("androidx.lifecycle:lifecycle-runtime-ktx:2.10.0")
     implementation("com.github.jeziellago:compose-markdown:0.5.7")
-    implementation("com.mikepenz:aboutlibraries-core:13.1.0")
-    implementation("com.mikepenz:aboutlibraries-compose-core:13.1.0")
-    implementation("com.mikepenz:aboutlibraries-compose-m3:13.1.0")
-    implementation("com.scottyab:rootbeer-lib:0.1.1")
+    implementation("com.mikepenz:aboutlibraries-core:13.2.1")
+    implementation("com.mikepenz:aboutlibraries-compose-core:13.2.1")
+    implementation("com.mikepenz:aboutlibraries-compose-m3:13.2.1")
+    implementation("com.scottyab:rootbeer-lib:0.1.2")
     implementation("com.squareup.okhttp3:okhttp:5.3.2")
-    implementation("com.squareup.retrofit2:retrofit:3.0.0")
-    implementation("com.squareup.retrofit2:converter-gson:3.0.0")
+    implementation("io.ktor:ktor-client-core")
+    implementation("io.ktor:ktor-client-okhttp")
+    implementation("io.ktor:ktor-client-content-negotiation")
+    implementation("io.ktor:ktor-serialization-gson")
+    implementation("io.ktor:ktor-client-logging")
     implementation("io.coil-kt:coil-compose:2.7.0")
     implementation(kotlin("script-runtime"))
-    implementation("androidx.compose.foundation:foundation:1.10.0")
+    implementation("androidx.compose.foundation:foundation:1.10.6")
     testImplementation("junit:junit:4.13.2")
-    androidTestImplementation(platform("androidx.compose:compose-bom:2025.12.00"))
+    androidTestImplementation(platform("androidx.compose:compose-bom:2026.03.01"))
     androidTestImplementation("androidx.test.ext:junit:1.3.0")
     androidTestImplementation("androidx.test.espresso:espresso-core:3.7.0")
     androidTestImplementation("androidx.compose.ui:ui-test-junit4")

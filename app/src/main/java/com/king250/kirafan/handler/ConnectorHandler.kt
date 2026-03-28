@@ -5,6 +5,7 @@ import android.content.Context
 import android.content.Intent
 import android.content.IntentFilter
 import android.os.Build
+import android.os.ParcelFileDescriptor
 import androidx.core.content.ContextCompat
 import com.king250.kirafan.Env
 import com.king250.kirafan.ui.activity.MainActivity
@@ -130,7 +131,7 @@ object ConnectorHandler {
         })
     }
 
-    fun startCoreLoop(): Boolean {
+    fun startCoreLoop(fd: ParcelFileDescriptor): Boolean {
         if (coreController.isRunning) {
             return false
         }
@@ -139,7 +140,7 @@ object ConnectorHandler {
         try {
             val filter = IntentFilter(Env.SERVICE_CHANNEL)
             ContextCompat.registerReceiver(service, receiver, filter, ContextCompat.RECEIVER_NOT_EXPORTED)
-            coreController.startLoop(config)
+            coreController.startLoop(config, fd.fd)
         }
         catch (e: Exception) {
             IpcUtil.toUI(service, Env.SERVICE_STOPPED)

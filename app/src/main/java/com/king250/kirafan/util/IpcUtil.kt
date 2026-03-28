@@ -2,7 +2,6 @@ package com.king250.kirafan.util
 
 import android.content.Context
 import android.content.Intent
-import android.util.Log
 import com.king250.kirafan.Env
 
 object IpcUtil {
@@ -17,7 +16,6 @@ object IpcUtil {
         val intent = Intent(Env.UI_CHANNEL)
         intent.putExtra("action", message)
         intent.`package` = context.packageName
-        Log.i("broadcaster", "toUI: $message")
         context.sendBroadcast(intent)
     }
 }

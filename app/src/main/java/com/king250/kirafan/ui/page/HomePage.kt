@@ -23,6 +23,7 @@ import androidx.core.app.NotificationManagerCompat
 import androidx.core.content.ContextCompat
 import androidx.datastore.preferences.core.booleanPreferencesKey
 import androidx.datastore.preferences.core.edit
+import androidx.datastore.preferences.core.longPreferencesKey
 import androidx.datastore.preferences.core.stringPreferencesKey
 import coil.compose.AsyncImage
 import coil.request.ImageRequest
@@ -196,6 +197,9 @@ fun HomePage(a: MainActivity) {
                                                         scope.launch {
                                                             a.dataStore.edit {
                                                                 it.remove(booleanPreferencesKey("agreed"))
+                                                                it.remove(stringPreferencesKey("access_token"))
+                                                                it.remove(stringPreferencesKey("refresh_token"))
+                                                                it.remove(longPreferencesKey("expires_in"))
                                                             }
                                                             a.logout(false)
                                                             disabledLogin = false

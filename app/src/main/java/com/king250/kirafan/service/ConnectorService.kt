@@ -57,9 +57,7 @@ class ConnectorService : VpnService(), ServiceHandler {
     }
 
     override fun onStartCommand(intent: Intent?, flags: Int, startId: Int): Int {
-        if (ConnectorHandler.startCoreLoop()) {
-            startService()
-        }
+        startService()
         return START_STICKY
     }
 
@@ -90,6 +88,9 @@ class ConnectorService : VpnService(), ServiceHandler {
         }
         try {
             fd = builder.establish()!!
+            if (!ConnectorHandler.startCoreLoop(fd)) {
+                throw Exception("Failed to start the core.")
+            }
             runTun2socks()
             val mainIntent = Intent(this@ConnectorService, MainActivity::class.java).apply {
                 flags = Intent.FLAG_ACTIVITY_SINGLE_TOP or Intent.FLAG_ACTIVITY_REORDER_TO_FRONT

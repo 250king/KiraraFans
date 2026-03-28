@@ -26,7 +26,7 @@
         android:theme="@style/Theme.KiraraFans">
         <meta-data
             android:name="io.sentry.dsn"
-            android:value="https://d0f40e4c0d00d1d4cdb170bdff142f58@sentry.kirafan.xyz/4508992580354048" />
+            android:value="https://d0f40e4c0d00d1d4cdb170bdff142f58@sentry.kirafan.site/4508992580354048" />
         <meta-data
             android:name="io.sentry.send-default-pii"
             android:value="true" />

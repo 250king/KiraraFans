@@ -13,10 +13,16 @@ import com.king250.kirafan.ui.activity.LicenseDetailActivity
 import com.mikepenz.aboutlibraries.Libs
 import com.mikepenz.aboutlibraries.ui.compose.m3.LibrariesContainer
 import com.mikepenz.aboutlibraries.util.withContext
+import kotlinx.collections.immutable.toImmutableList
 
 @OptIn(ExperimentalMaterial3Api::class)
 @Composable
 fun LicensePage(a: LicenseActivity) {
+    val origin = Libs.Builder().withContext(a).build()
+    val filter = origin.libraries.filter { library ->
+        library.licenses.isNotEmpty()
+    }
+
     Scaffold(
         topBar = {
             TopAppBar(
@@ -39,7 +45,7 @@ fun LicensePage(a: LicenseActivity) {
         }
     ) { innerPadding ->
         LibrariesContainer(
-            libraries = Libs.Builder().withContext(a).build(),
+            libraries = Libs(filter.toImmutableList(), origin.licenses),
             modifier = Modifier.fillMaxSize().padding(innerPadding),
             onLibraryClick = {
                 val intent = Intent(a, LicenseDetailActivity::class.java)

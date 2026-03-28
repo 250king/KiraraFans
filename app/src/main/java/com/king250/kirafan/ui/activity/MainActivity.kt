@@ -282,6 +282,6 @@ class MainActivity : ComponentActivity() {
     }
 
     fun install(packageName: String) {
-        ClientUtil.open(this, "https://api.kirafan.xyz/v1.0/download/$packageName")
+        ClientUtil.open(this, "https://api.kirafan.site/v2.0/download/$packageName")
     }
 }
