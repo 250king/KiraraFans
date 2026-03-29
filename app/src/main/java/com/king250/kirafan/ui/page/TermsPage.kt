@@ -63,7 +63,6 @@ fun TermsPage(a: TermsActivity) {
         },
         bottomBar = {
             val show = a.intent.getBooleanExtra("show", false)
-
             Crossfade(targetState = loading) { loading ->
                 if (!loading && content.isNotEmpty() && show) {
                     Column(Modifier.padding(16.dp)) {

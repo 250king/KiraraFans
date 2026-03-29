@@ -74,7 +74,7 @@ class ConnectorService : VpnService(), ServiceHandler {
             setMtu(1500)
             addAddress("26.26.26.1", 30)
             addRoute("0.0.0.0", 0)
-            addDnsServer("223.5.5.5")
+            addDnsServer("1.1.1.1")
             setSession(getString(R.string.app_name))
             addAllowedApplication(Env.TARGET_PACKAGE)
             if (Build.VERSION.SDK_INT >= Build.VERSION_CODES.Q) {

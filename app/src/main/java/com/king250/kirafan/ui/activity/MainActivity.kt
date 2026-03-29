@@ -25,11 +25,10 @@ import androidx.datastore.preferences.core.edit
 import androidx.datastore.preferences.core.longPreferencesKey
 import androidx.datastore.preferences.core.stringPreferencesKey
 import androidx.lifecycle.lifecycleScope
-import com.king250.kirafan.api
 import com.king250.kirafan.Env
+import com.king250.kirafan.api.Api
 import com.king250.kirafan.dataStore
 import com.king250.kirafan.handler.ConnectorHandler
-import com.king250.kirafan.model.data.Token
 import com.king250.kirafan.model.view.DialogView
 import com.king250.kirafan.model.view.MainView
 import com.king250.kirafan.ui.page.Warning
@@ -40,11 +39,7 @@ import com.king250.kirafan.util.IpcUtil
 import com.king250.kirafan.util.SecurityUtil
 import kotlinx.coroutines.delay
 import kotlinx.coroutines.flow.firstOrNull
-import kotlinx.coroutines.flow.map
 import kotlinx.coroutines.launch
-import retrofit2.Call
-import retrofit2.Callback
-import retrofit2.Response
 import java.io.File
 
 class MainActivity : ComponentActivity() {
@@ -62,8 +57,6 @@ class MainActivity : ComponentActivity() {
 
     var challenge: String? = null
 
-    var keeping = true
-
     val m: MainView by viewModels()
 
     val d: DialogView by viewModels()
@@ -79,61 +72,68 @@ class MainActivity : ComponentActivity() {
         }
         val tee = SecurityUtil.initKeyStore()
         if (Env.DEVICE_ABI == apkAbi && tee) {
-            vpnPermissionActivity = registerForActivityResult(ActivityResultContracts.StartActivityForResult()) {
-                if (it.resultCode == RESULT_OK) {
-                    connect()
-                }
-                else {
-                    m.showSnackBar("这个是程序运行要用到的，所以还是求求你授权吧~")
-                }
-            }
-            notificationSettingActivity = registerForActivityResult(ActivityResultContracts.StartActivityForResult()) {
-                if (Build.VERSION.SDK_INT >= Build.VERSION_CODES.TIRAMISU) {
-                    val result = ContextCompat.checkSelfPermission(this, Manifest.permission.POST_NOTIFICATIONS)
-                    if (result == PackageManager.PERMISSION_DENIED) {
-                        m.showSnackBar("这个是程序运行要用到的，所以还是求求你授权吧~")
-                    }
-                    else {
+            vpnPermissionActivity =
+                registerForActivityResult(ActivityResultContracts.StartActivityForResult()) {
+                    if (it.resultCode == RESULT_OK) {
                         connect()
-                    }
-                }
-                else {
-                    val enabled = NotificationManagerCompat.from(this).areNotificationsEnabled()
-                    if (!enabled) {
+                    } else {
                         m.showSnackBar("这个是程序运行要用到的，所以还是求求你授权吧~")
                     }
-                    else {
-                        connect()
-                    }
                 }
-            }
-            permissionActivity = registerForActivityResult(ActivityResultContracts.RequestPermission()) {
-                if (it) {
-                    connect()
-                }
-                else {
-                    if (ActivityCompat.shouldShowRequestPermissionRationale(this, Manifest.permission.POST_NOTIFICATIONS)) {
-                        m.showSnackBar("这个是程序运行要用到的，所以还是求求你授权吧~")
-                    }
-                    else{
-                        ClientUtil.toast(this, "由于你已经设置不允许再请求权限了，所以只能你自己设置了（")
-                        enableNotification()
-                    }
-                }
-            }
-            termsActivity = registerForActivityResult(ActivityResultContracts.StartActivityForResult()) {
-                if (it.resultCode == RESULT_OK) {
-                    lifecycleScope.launch {
-                        dataStore.edit { preferences ->
-                            preferences[booleanPreferencesKey("agreed")] = true
+            notificationSettingActivity =
+                registerForActivityResult(ActivityResultContracts.StartActivityForResult()) {
+                    if (Build.VERSION.SDK_INT >= Build.VERSION_CODES.TIRAMISU) {
+                        val result = ContextCompat.checkSelfPermission(
+                            this,
+                            Manifest.permission.POST_NOTIFICATIONS
+                        )
+                        if (result == PackageManager.PERMISSION_DENIED) {
+                            m.showSnackBar("这个是程序运行要用到的，所以还是求求你授权吧~")
+                        } else {
+                            connect()
                         }
-                        connect()
+                    } else {
+                        val enabled = NotificationManagerCompat.from(this).areNotificationsEnabled()
+                        if (!enabled) {
+                            m.showSnackBar("这个是程序运行要用到的，所以还是求求你授权吧~")
+                        } else {
+                            connect()
+                        }
                     }
                 }
-                else {
-                    m.showSnackBar("只有认真阅读且同意了才能玩~")
+            permissionActivity =
+                registerForActivityResult(ActivityResultContracts.RequestPermission()) {
+                    if (it) {
+                        connect()
+                    } else {
+                        if (ActivityCompat.shouldShowRequestPermissionRationale(
+                                this,
+                                Manifest.permission.POST_NOTIFICATIONS
+                            )
+                        ) {
+                            m.showSnackBar("这个是程序运行要用到的，所以还是求求你授权吧~")
+                        } else {
+                            ClientUtil.toast(
+                                this,
+                                "由于你已经设置不允许再请求权限了，所以只能你自己设置了（"
+                            )
+                            enableNotification()
+                        }
+                    }
                 }
-            }
+            termsActivity =
+                registerForActivityResult(ActivityResultContracts.StartActivityForResult()) {
+                    if (it.resultCode == RESULT_OK) {
+                        lifecycleScope.launch {
+                            dataStore.edit { preferences ->
+                                preferences[booleanPreferencesKey("agreed")] = true
+                            }
+                            connect()
+                        }
+                    } else {
+                        m.showSnackBar("只有认真阅读且同意了才能玩~")
+                    }
+                }
             onBackPressedDispatcher.addCallback(this) {
                 moveTaskToBack(false)
             }
@@ -142,35 +142,17 @@ class MainActivity : ComponentActivity() {
                     HomePage(this)
                 }
             }
-            compatSplashScreen.setKeepOnScreenCondition{ keeping }
             lifecycleScope.launch {
-                val start = System.currentTimeMillis()
                 m.init()
-                val token = dataStore.data.map{it[stringPreferencesKey("access_token")]}.firstOrNull()
-                if (token == null) {
-                    m.setLoading(false)
-                    while (System.currentTimeMillis() - start <= 500) {
-                        delay(50)
-                    }
-                    keeping = false
-                    m.check()
-                    return@launch
-                }
-                m.refresh()
-                while (m.loading.value && System.currentTimeMillis() - start <= 1000) {
-                    delay(50)
-                }
-                keeping = false
+                m.setLoading(false)
                 m.check()
             }
-        }
-        else {
+        } else {
             setContent {
                 KiraraFansTheme {
                     Warning(this, !tee)
                 }
             }
-            compatSplashScreen.setKeepOnScreenCondition{false}
         }
     }
 
@@ -178,50 +160,51 @@ class MainActivity : ComponentActivity() {
         super.onResume()
         try {
             val info = packageManager.getPackageInfo(Env.TARGET_PACKAGE, 0)
-            m.setVersion(if (Env.HEIGHT_ANDROID) {"VMOS ${info.versionName}"} else {info.versionName})
-        }
-        catch (_: Exception) {
+            m.setVersion(
+                if (Env.HEIGHT_ANDROID) {
+                    "VMOS ${info.versionName}"
+                } else {
+                    info.versionName
+                }
+            )
+        } catch (_: Exception) {
             m.setVersion(null)
         }
     }
 
     override fun onNewIntent(intent: Intent) {
         super.onNewIntent(intent)
-        if (intent.data == null && intent.action != Intent.ACTION_VIEW) {
-            m.setLoading(false)
-            return
-        }
-        m.setLoading(true)
-        api.oauth.login(
-            code = intent.data!!.getQueryParameter("code") ?: "",
-            codeVerifier = challenge ?: ""
-        ).enqueue(object : Callback<Token> {
-            override fun onResponse(p0: Call<Token>, p1: Response<Token>) {
-                if (!p1.isSuccessful) {
-                    m.setLoading(false)
-                    return
-                }
-                val token = p1.body()
-                if (token == null) {
-                    m.setLoading(false)
-                    return
-                }
-                lifecycleScope.launch {
-                    dataStore.edit {
-                        it[stringPreferencesKey("access_token")] = token.accessToken
-                        it[stringPreferencesKey("refresh_token")] = token.refreshToken
-                        it[longPreferencesKey("expires_in")] = System.currentTimeMillis() / 1000 + token.expiresIn
-                    }
-                    m.refresh()
-                }
-            }
+        callback(intent)
+    }
 
-            override fun onFailure(p0: Call<Token>, p1: Throwable) {
-                p1.printStackTrace()
-                m.setLoading(false)
-                m.showSnackBar("网络好像不太好哦~")
+    private fun callback(intent: Intent?) {
+        when (intent?.action) {
+            Env.OIDC_COMPLETE -> {
+                m.setLoading(true)
+                Api.oidc.handleRedirect(
+                    intent = intent,
+                    onSuccess = { token ->
+                        lifecycleScope.launch {
+                            dataStore.edit {
+                                token.accessToken?.let { v -> it[stringPreferencesKey("access_token")] = v }
+                                token.refreshToken?.let { v -> it[stringPreferencesKey("refresh_token")] = v }
+                                token.idToken?.let { v -> it[stringPreferencesKey("id_token")] = v }
+                                token.accessTokenExpirationTime?.let { v -> it[longPreferencesKey("expires_at")] = v }
+                            }
+                            m.setLoading(false)
+                        }
+                    },
+                    onError = { e ->
+                        e.printStackTrace()
+                        m.setLoading(false)
+                        m.showSnackBar("登录失败，请重试~")
+                    }
+                )
             }
-        })
+            Env.OIDC_CANCEL -> {
+                m.setLoading(false)
+            }
+        }
     }
 
     fun enableNotification() {
@@ -232,8 +215,7 @@ class MainActivity : ComponentActivity() {
                 putExtra("app_package", packageName)
                 putExtra("app_uid", applicationInfo.uid)
             }
-        }
-        else {
+        } else {
             Intent(Settings.ACTION_APPLICATION_DETAILS_SETTINGS).apply {
                 setData(Uri.fromParts("package", packageName, null))
             }
@@ -249,15 +231,17 @@ class MainActivity : ComponentActivity() {
                 if (agreed == true) {
                     m.setDisabledConnect(true)
                     ConnectorHandler.startVService(this@MainActivity)
-                }
-                else {
-                    termsActivity.launch(Intent(this@MainActivity, TermsActivity::class.java).apply {
-                        putExtra("show", true)
-                    })
+                } else {
+                    termsActivity.launch(
+                        Intent(
+                            this@MainActivity,
+                            TermsActivity::class.java
+                        ).apply {
+                            putExtra("show", true)
+                        })
                 }
             }
-        }
-        else {
+        } else {
             vpnPermissionActivity.launch(intent)
         }
     }
@@ -282,6 +266,6 @@ class MainActivity : ComponentActivity() {
     }
 
     fun install(packageName: String) {
-        ClientUtil.open(this, "https://api.kirafan.site/v2.0/download/$packageName")
+        ClientUtil.open(this, "https://api.kirafan.site/v2.1/download/$packageName")
     }
 }

@@ -1,6 +1,7 @@
 package com.king250.kirafan.ui.page
 
 import android.Manifest
+import android.app.PendingIntent
 import android.content.Intent
 import android.content.pm.PackageManager
 import android.os.Build
@@ -29,6 +30,7 @@ import coil.compose.AsyncImage
 import coil.request.ImageRequest
 import com.king250.kirafan.Env
 import com.king250.kirafan.R
+import com.king250.kirafan.api.Api
 import com.king250.kirafan.ui.activity.AboutActivity
 import com.king250.kirafan.ui.activity.InfoActivity
 import com.king250.kirafan.ui.activity.MainActivity
@@ -36,17 +38,12 @@ import com.king250.kirafan.dataStore
 import com.king250.kirafan.ui.component.CardButton
 import com.king250.kirafan.ui.dialog.*
 import com.king250.kirafan.util.ClientUtil
-import com.king250.kirafan.api.HttpApi
 import com.king250.kirafan.ui.activity.HelpActivity
 import com.king250.kirafan.util.IpcUtil
-import com.king250.kirafan.util.SecurityUtil
 import kotlinx.coroutines.flow.firstOrNull
 import kotlinx.coroutines.flow.map
 import kotlinx.coroutines.launch
-import retrofit2.Call
-import retrofit2.Callback
-import retrofit2.Response
-import java.net.URLEncoder
+import net.openid.appauth.CodeVerifierUtil.generateRandomCodeVerifier
 
 @OptIn(ExperimentalMaterial3Api::class)
 @Composable
@@ -161,7 +158,7 @@ fun HomePage(a: MainActivity) {
                                             .size(48.dp),
                                         model = ImageRequest
                                             .Builder(a)
-                                            .data(user!!.avatar)
+                                            .data(user!!.picture)
                                             .apply {
                                                 crossfade(true)
                                             }
@@ -173,49 +170,46 @@ fun HomePage(a: MainActivity) {
                             onClick = {
                                 if (!disabledLogin) {
                                     if (user == null) {
-                                        a.challenge = SecurityUtil.generateCodeVerifier()
-                                        val redirectUri = URLEncoder.encode(Env.REDIRECT_URI, "utf-8")
-                                        val url = Env.AUTHORIZE_URI +
-                                                "?response_type=code" +
-                                                "&client_id=${Env.CLIENT_ID}" +
-                                                "&redirect_uri=${redirectUri}" +
-                                                "&code_challenge_method=S256" +
-                                                "&code_challenge=${SecurityUtil.generateCodeChallenge(a.challenge!!)}"
-                                        ClientUtil.open(a, url)
+                                        a.challenge = generateRandomCodeVerifier()
+                                        val complete = PendingIntent.getActivity(
+                                            a, 1001,
+                                            Intent(a, MainActivity::class.java).apply {
+                                                action = Env.OIDC_COMPLETE
+                                                addFlags(Intent.FLAG_ACTIVITY_SINGLE_TOP or Intent.FLAG_ACTIVITY_CLEAR_TOP)
+                                            },
+                                            PendingIntent.FLAG_UPDATE_CURRENT or PendingIntent.FLAG_MUTABLE
+                                        )
+                                        val cancel = PendingIntent.getActivity(
+                                            a, 1002,
+                                            Intent(a, MainActivity::class.java).apply {
+                                                action = Env.OIDC_CANCEL
+                                                addFlags(Intent.FLAG_ACTIVITY_SINGLE_TOP or Intent.FLAG_ACTIVITY_CLEAR_TOP)
+                                            },
+                                            PendingIntent.FLAG_UPDATE_CURRENT or PendingIntent.FLAG_MUTABLE
+                                        )
+                                        Api.oidc.startLogin(a.challenge!!, complete, cancel)
                                     } else {
                                         disabledLogin = true
                                         scope.launch {
                                             val token = a.dataStore.data
                                                 .map { it[stringPreferencesKey("refresh_token")] }
                                                 .firstOrNull() ?: ""
-                                            HttpApi.oauth.logout(token)
-                                                .enqueue(object : Callback<Unit> {
-                                                    override fun onResponse(
-                                                        p0: Call<Unit>,
-                                                        p1: Response<Unit>
-                                                    ) {
-                                                        scope.launch {
-                                                            a.dataStore.edit {
-                                                                it.remove(booleanPreferencesKey("agreed"))
-                                                                it.remove(stringPreferencesKey("access_token"))
-                                                                it.remove(stringPreferencesKey("refresh_token"))
-                                                                it.remove(longPreferencesKey("expires_in"))
-                                                            }
-                                                            a.logout(false)
-                                                            disabledLogin = false
-                                                        }
-                                                    }
-
-                                                    override fun onFailure(
-                                                        p0: Call<Unit>,
-                                                        p1: Throwable
-                                                    ) {
-                                                        scope.launch {
-                                                            snackBarHostState.showSnackbar("网络好像不太好哦~")
-                                                            disabledLogin = false
-                                                        }
-                                                    }
-                                                })
+                                            runCatching {
+                                                Api.oidc.revoke(token)
+                                            }.onSuccess {
+                                                a.dataStore.edit {
+                                                    it.remove(booleanPreferencesKey("agreed"))
+                                                    it.remove(stringPreferencesKey("access_token"))
+                                                    it.remove(stringPreferencesKey("refresh_token"))
+                                                    it.remove(stringPreferencesKey("id_token"))
+                                                    it.remove(longPreferencesKey("expires_at"))
+                                                }
+                                                a.logout(false)
+                                            }.onFailure {
+                                                snackBarHostState.showSnackbar("网络好像不太好哦~")
+                                            }.also {
+                                                disabledLogin = false
+                                            }
                                         }
                                     }
                                 }

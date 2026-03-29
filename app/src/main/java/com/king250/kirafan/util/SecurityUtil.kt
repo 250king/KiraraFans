@@ -7,7 +7,6 @@ import com.king250.kirafan.Env
 import java.security.KeyPairGenerator
 import java.security.KeyStore
 import java.security.MessageDigest
-import java.security.SecureRandom
 import java.security.spec.MGF1ParameterSpec
 import javax.crypto.Cipher
 import javax.crypto.spec.GCMParameterSpec
@@ -16,13 +15,6 @@ import javax.crypto.spec.PSource
 import javax.crypto.spec.SecretKeySpec
 
 object SecurityUtil {
-    fun generateCodeVerifier(): String {
-        val secureRandom = SecureRandom()
-        val code = ByteArray(64)
-        secureRandom.nextBytes(code)
-        return Base64.encodeToString(code, Base64.URL_SAFE or Base64.URL_SAFE or Base64.NO_PADDING)
-    }
-
     fun generateCodeChallenge(codeVerifier: String): String {
         val sha256 = MessageDigest.getInstance("SHA-256")
         val hash = sha256.digest(codeVerifier.toByteArray())
@@ -33,7 +25,6 @@ object SecurityUtil {
         return try {
             val keyStore = KeyStore.getInstance("AndroidKeyStore")
             keyStore.load(null)
-            keyStore.deleteEntry(Env.KEY_ALIAS)
             if (!keyStore.containsAlias(Env.KEY_ALIAS)) {
                 val generator = KeyPairGenerator.getInstance(
                     KeyProperties.KEY_ALGORITHM_RSA,

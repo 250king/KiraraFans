@@ -14,11 +14,17 @@ object Env {
         "com.aniplex.kirarafantasia"
     }
 
-    const val AUTHORIZE_URI = "https://account.250king.top/application/o/authorize/"
+    const val RESOURCE_URI = "https://api.kirafan.site"
+
+    const val TOKEN_URI = "https://auth.250king.top/oidc/token"
+
+    const val AUTHORIZE_URI = "https://auth.250king.top/oidc/auth"
 
     const val REDIRECT_URI = "kirara://callback/login"
 
-    const val CLIENT_ID = "wimwBO8uyk6DODegsIbdMMtm88baBwYqZkyyOVPO"
+    const val REVOKE_URI = "https://auth.250king.top/oidc/token/revocation"
+
+    const val CLIENT_ID = "6obhroec5x8qaho2gudmp"
 
     const val SERVICE_CHANNEL = "com.king250.kirafan.service.ConnectorVpnService"
 
@@ -27,6 +33,10 @@ object Env {
     const val UI_CHANNEL = "com.king250.kirafan.ui.activity.MainActivity"
 
     const val KEY_ALIAS = "com.king250.kirafan.ui.activity.ConfigKey"
+
+    const val OIDC_COMPLETE = "com.king250.kirafan.oidc.complete"
+
+    const val OIDC_CANCEL = "com.king250.kirafan.oidc.cancel"
 
     const val SERVICE_STARTED = 0
 

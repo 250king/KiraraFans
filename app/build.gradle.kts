@@ -8,16 +8,16 @@ plugins {
 
 android {
     namespace = "com.king250.kirafan"
-    compileSdk = 37
+    compileSdk = 36
 
     defaultConfig {
-
         applicationId = "com.king250.kirafan"
         minSdk = 24
-        targetSdk = 37
+        targetSdk = 36
         versionCode = 41000
-        versionName = "4.10.0"
+        versionName = "4.10.0-beta"
         testInstrumentationRunner = "androidx.test.runner.AndroidJUnitRunner"
+        manifestPlaceholders["appAuthRedirectScheme"] = "kirara"
         vectorDrawables {
             useSupportLibrary = true
         }
@@ -88,7 +88,7 @@ aboutLibraries {
 dependencies {
     implementation(fileTree(mapOf("dir" to "libs", "include" to listOf("*.aar", "*.jar"))))
     implementation(platform("androidx.compose:compose-bom:2026.03.01"))
-    implementation(platform("io.ktor:ktor-bom:3.4.1"))
+    implementation(platform("io.ktor:ktor-bom:3.4.2"))
     implementation("androidx.activity:activity-compose:1.13.0")
     implementation("androidx.browser:browser:1.10.0")
     implementation("androidx.core:core-ktx:1.18.0")
@@ -103,13 +103,13 @@ dependencies {
     implementation("com.mikepenz:aboutlibraries-compose-core:13.2.1")
     implementation("com.mikepenz:aboutlibraries-compose-m3:13.2.1")
     implementation("com.scottyab:rootbeer-lib:0.1.2")
-    implementation("com.squareup.okhttp3:okhttp:5.3.2")
+    implementation("io.ktor:ktor-client-auth")
     implementation("io.ktor:ktor-client-core")
     implementation("io.ktor:ktor-client-okhttp")
     implementation("io.ktor:ktor-client-content-negotiation")
     implementation("io.ktor:ktor-serialization-gson")
-    implementation("io.ktor:ktor-client-logging")
     implementation("io.coil-kt:coil-compose:2.7.0")
+    implementation("net.openid:appauth:0.11.1")
     implementation(kotlin("script-runtime"))
     implementation("androidx.compose.foundation:foundation:1.10.6")
     testImplementation("junit:junit:4.13.2")

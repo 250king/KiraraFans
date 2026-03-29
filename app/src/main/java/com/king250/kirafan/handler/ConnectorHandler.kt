@@ -9,22 +9,19 @@ import android.os.ParcelFileDescriptor
 import androidx.core.content.ContextCompat
 import com.king250.kirafan.Env
 import com.king250.kirafan.ui.activity.MainActivity
-import com.king250.kirafan.api
-import com.king250.kirafan.model.data.Encrypted
+import com.king250.kirafan.api.Api
 import com.king250.kirafan.model.data.Session
-import com.king250.kirafan.model.data.Endpoint
-import com.king250.kirafan.model.data.Items
 import com.king250.kirafan.service.ConnectorService
 import com.king250.kirafan.util.ClientUtil
 import com.king250.kirafan.util.IpcUtil
 import com.king250.kirafan.util.SecurityUtil
 import go.Seq
+import kotlinx.coroutines.CoroutineScope
+import kotlinx.coroutines.Dispatchers
+import kotlinx.coroutines.launch
 import libv2ray.CoreCallbackHandler
 import libv2ray.Libv2ray
 import libv2ray.CoreController
-import retrofit2.Call
-import retrofit2.Callback
-import retrofit2.Response
 import java.lang.ref.SoftReference
 
 object ConnectorHandler {
@@ -78,57 +75,36 @@ object ConnectorHandler {
         if (coreController.isRunning) {
             return
         }
-        api.protected.getEndpoints().enqueue(object : Callback<Items<Endpoint>> {
-            override fun onResponse(call: Call<Items<Endpoint>>, response: Response<Items<Endpoint>>) {
-                if (!response.isSuccessful) {
-                    context.m.showSnackBar("服务器爆炸了！")
+        try {
+            CoroutineScope(Dispatchers.IO).launch {
+                val res = Api.kirara.getEndpoints()
+                if (res.items.isEmpty()) {
                     IpcUtil.toUI(context, Env.SERVICE_STOPPED)
-                    return
+                    context.m.showSnackBar("没有可用的服务器（")
+                    return@launch
                 }
-                context.m.setEndpoints(response.body()!!.items)
-                if (context.m.selectedEndpoint.value > response.body()!!.total) {
+                context.m.setEndpoints(res.items)
+                if (context.m.selectedEndpoint.value > res.total) {
                     context.m.setSelectedEndpoint(0)
                 }
-                val endpoint = response.body()!!.items[context.m.selectedEndpoint.value].region
-                val key = SecurityUtil.getPublicKey() ?: return
-                api.protected.createSession(Session(endpoint, key)).enqueue(object : Callback<Encrypted> {
-                    override fun onResponse(call: Call<Encrypted?>, t: Response<Encrypted?>) {
-                        if (!t.isSuccessful) {
-                            when(t.code()) {
-                                401 -> {
-                                    context.logout()
-                                }
-                                403 -> {
-                                    context.m.showSnackBar("你好像不在群组里，或者被ban了（")
-                                }
-                                else -> {
-                                    context.m.showSnackBar("服务器出了点小差（")
-                                }
-                            }
-                            IpcUtil.toUI(context, Env.SERVICE_STOPPED)
-                            return
-                        }
-                        val data = t.body()!!
-                        config = SecurityUtil.decrypt(data.key, data.iv, data.data) ?: return
-                        val intent = Intent(context, ConnectorService::class.java)
-                        if (Build.VERSION.SDK_INT > Build.VERSION_CODES.N_MR1) {
-                            context.startForegroundService(intent)
-                        }
-                        else {
-                            context.startService(intent)
-                        }
-                    }
-
-                    override fun onFailure(call: Call<Encrypted?>, t: Throwable) {
-                        IpcUtil.toUI(context, Env.SERVICE_STOPPED)
-                    }
-                })
+                val endpoint = res.items[context.m.selectedEndpoint.value].region
+                val key = SecurityUtil.getPublicKey() ?: return@launch
+                val session = Api.kirara.createSession(Session(endpoint, key))
+                config = SecurityUtil.decrypt(session.key, session.iv, session.data) ?: return@launch
+                val intent = Intent(context, ConnectorService::class.java)
+                if (Build.VERSION.SDK_INT > Build.VERSION_CODES.N_MR1) {
+                    context.startForegroundService(intent)
+                }
+                else {
+                    context.startService(intent)
+                }
             }
-
-            override fun onFailure(call: Call<Items<Endpoint>>, t: Throwable) {
-                IpcUtil.toUI(context, Env.SERVICE_STOPPED)
-            }
-        })
+        } catch (e: Exception) {
+            e.printStackTrace()
+            context.m.showSnackBar("连接失败了（")
+            IpcUtil.toUI(context, Env.SERVICE_STOPPED)
+            return
+        }
     }
 
     fun startCoreLoop(fd: ParcelFileDescriptor): Boolean {
@@ -164,12 +140,10 @@ object ConnectorHandler {
                 e.printStackTrace()
             }
         }
-        api.protected.revokeSession().enqueue(object : Callback<Unit> {
-            override fun onResponse(call: Call<Unit?>, response: Response<Unit?>) {}
-
-            override fun onFailure(call: Call<Unit?>, t: Throwable) {}
-        })
         try {
+            CoroutineScope(Dispatchers.IO).launch {
+                Api.kirara.revokeSession()
+            }
             service.unregisterReceiver(receiver)
         }
         catch (e: Exception) {

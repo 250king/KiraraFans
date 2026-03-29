@@ -5,10 +5,7 @@ import android.content.Context
 import androidx.datastore.core.DataStore
 import androidx.datastore.preferences.core.Preferences
 import androidx.datastore.preferences.preferencesDataStore
-import com.king250.kirafan.api.HttpApi
-
-val api: HttpApi
-    get() = HttpApi
+import com.king250.kirafan.api.Api
 
 val Context.dataStore: DataStore<Preferences> by preferencesDataStore("main")
 
@@ -24,6 +21,6 @@ class Application : Application() {
 
     override fun onCreate() {
         super.onCreate()
-        HttpApi.init(this)
+        Api.init(this)
     }
 }

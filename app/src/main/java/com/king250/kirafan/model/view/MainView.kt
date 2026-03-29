@@ -8,25 +8,30 @@ import android.content.Context
 import android.content.Intent
 import android.content.IntentFilter
 import android.os.Build
+import android.util.Base64
 import androidx.compose.material3.SnackbarHostState
 import androidx.core.content.ContextCompat
 import androidx.core.content.ContextCompat.getSystemService
+import androidx.datastore.preferences.core.stringPreferencesKey
 import androidx.lifecycle.AndroidViewModel
+import androidx.lifecycle.application
 import androidx.lifecycle.viewModelScope
-import com.king250.kirafan.api
+import com.google.gson.Gson
 import com.king250.kirafan.BuildConfig
 import com.king250.kirafan.Env
+import com.king250.kirafan.api.Api
+import com.king250.kirafan.dataStore
 import com.king250.kirafan.model.data.Endpoint
-import com.king250.kirafan.model.data.Release
 import com.king250.kirafan.model.data.User
 import kotlinx.coroutines.Dispatchers
+import kotlinx.coroutines.Job
 import kotlinx.coroutines.flow.MutableStateFlow
 import kotlinx.coroutines.flow.StateFlow
+import kotlinx.coroutines.flow.collectLatest
+import kotlinx.coroutines.flow.distinctUntilChanged
+import kotlinx.coroutines.flow.map
 import kotlinx.coroutines.launch
 import kotlinx.coroutines.withContext
-import retrofit2.Call
-import retrofit2.Callback
-import retrofit2.Response
 import java.io.File
 import java.io.FileOutputStream
 
@@ -65,6 +70,8 @@ class MainView(application: Application) : AndroidViewModel(application) {
 
     val update: StateFlow<Boolean> = _update
 
+    private var tokenObserverJob: Job? = null
+
     private val handler = object : BroadcastReceiver() {
         override fun onReceive(p0: Context?, p1: Intent?) {
             when (p1?.getIntExtra("action", -1)) {
@@ -77,6 +84,25 @@ class MainView(application: Application) : AndroidViewModel(application) {
                 else -> {}
             }
             _disabledConnect.value = false
+        }
+    }
+
+    private fun startObserveIdToken() {
+        tokenObserverJob?.cancel()
+        tokenObserverJob = viewModelScope.launch {
+            application.dataStore.data
+                .map { prefs -> prefs[stringPreferencesKey("id_token")] }
+                .distinctUntilChanged()
+                .collectLatest { token ->
+                    if (token == null) {
+                        _user.value = null
+                    } else {
+                        val parts = token.split(".")
+                        require(parts.size == 3) { "Invalid JWT token" }
+                        val string = String(Base64.decode(parts[1], Base64.URL_SAFE))
+                        _user.value = Gson().fromJson(string, User::class.java)
+                    }
+                }
         }
     }
 
@@ -115,41 +141,23 @@ class MainView(application: Application) : AndroidViewModel(application) {
             notificationManager?.createNotificationChannel(channel)
         }
         ContextCompat.registerReceiver(context, handler, filter, ContextCompat.RECEIVER_NOT_EXPORTED)
-    }
-
-    fun refresh() {
-        api.protected.getProfile().enqueue(object : Callback<User> {
-            override fun onResponse(p0: Call<User>, p1: Response<User>) {
-                _user.value = p1.body()
-                _loading.value = false
-            }
-
-            override fun onFailure(p0: Call<User>, p1: Throwable) {
-                p1.printStackTrace()
-                _loading.value = false
-            }
-        })
+        startObserveIdToken()
     }
 
     fun check() {
-        api.public.getRelease().enqueue(object : Callback<Release> {
-            override fun onResponse(p0: Call<Release>, p1: Response<Release>) {
-                if (!p1.isSuccessful) {
-                    showSnackBar("无法获得最新版本状态（")
-                    return
+        try {
+            viewModelScope.launch {
+                val res = withContext(Dispatchers.IO) {
+                    Api.kirara.getVersion()
                 }
-                val release = p1.body()!!.code
-                val app = BuildConfig.VERSION_CODE
-                if (release > app) {
+                if (res.code > BuildConfig.VERSION_CODE) {
                     _update.value = true
                 }
             }
-
-            override fun onFailure(p0: Call<Release>, p1: Throwable) {
-                p1.printStackTrace()
-                showSnackBar("网络好像不太好哦~")
-            }
-        })
+        } catch (e: Exception) {
+            e.printStackTrace()
+            showSnackBar("网络好像不太好哦~")
+        }
     }
 
     fun setUser(value: User?) {
